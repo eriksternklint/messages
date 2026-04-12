@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+import { installOrchestrator } from '@/lib/ai';
 import { seedDevData } from '@/lib/seed';
 import { useNodeStore } from '@/store';
 
@@ -16,8 +17,15 @@ import { RightSidebar } from './RightSidebar';
  */
 export function AppShell() {
   useEffect(() => {
+    // Install the AI Orchestration Layer listener first so any events
+    // produced by the dev seed (if we later choose to dispatch them)
+    // or by the user's demo actions flow through it.
+    installOrchestrator();
+
     // Seed dev data once, iff the store is empty. Uses getState() so
-    // this effect does not resubscribe when state changes.
+    // this effect does not resubscribe when state changes. Seed calls
+    // store mutators directly (not dispatch), so the orchestrator
+    // listener does not fire on seed data.
     if (Object.keys(useNodeStore.getState().messagesById).length === 0) {
       seedDevData();
     }

@@ -5,7 +5,7 @@ private execution into a single, minimalist UI. The metric is **Daily Active
 Seconds** — open the app, execute an AI-drafted response, run a slash command
 that mutates an external database, close the app.
 
-> **Status:** Phase 1, Step 2 complete — dashboard UI, Priority Feed, Universal Command Input.
+> **Status:** Phase 1, Step 3 complete — Mock Context Engine + AI Orchestrator + Agent Worker.
 
 ## Tech
 
@@ -61,7 +61,10 @@ messages/
 ├── app/                         # Next.js App Router entry
 │   ├── globals.css
 │   ├── layout.tsx
-│   └── page.tsx                 # renders <AppShell />
+│   ├── page.tsx                 # renders <AppShell />
+│   └── api/
+│       ├── ai/draft/route.ts    # POST → Pre-Filled Response Engine
+│       └── agents/webhook/route.ts  # POST → external agent push contract
 ├── src/
 │   ├── components/              # UI — hand-rolled Tailwind, Notion-Zen look
 │   │   ├── layout/
@@ -77,9 +80,18 @@ messages/
 │   ├── lib/
 │   │   ├── utils.ts             # cn(), formatRelative(), initials()
 │   │   ├── seed.ts              # dev-only store seed
-│   │   └── events/              # event bus + per-source normalizers
-│   │       ├── bus.ts
-│   │       └── sources/{notion,whatsapp,agent}.ts
+│   │   ├── events/              # event bus + per-source normalizers
+│   │   │   ├── bus.ts
+│   │   │   └── sources/{notion,whatsapp,agent}.ts
+│   │   ├── ai/                  # AI Orchestration Layer
+│   │   │   ├── context.ts        # mock RAG / vector search
+│   │   │   ├── intent.ts         # Ghost Tracking intent classifier
+│   │   │   ├── draft-server.ts   # real Claude call + deterministic fallback
+│   │   │   ├── draft-client.ts   # fetch wrapper for the draft API route
+│   │   │   └── orchestrator.ts   # event bus listener — classify + draft
+│   │   └── agents/              # Digital Workforce helpers
+│   │       ├── washup.ts         # simulate a 24/7 agent proactive push
+│   │       └── whatsapp-demo.ts  # inject a mock inbound WhatsApp event
 │   ├── store/                   # Zustand root store + slices
 │   │   ├── useNodeStore.ts
 │   │   └── slices/
@@ -108,7 +120,7 @@ messages/
 
 - [x] **Step 1** — scaffolding, types, Zustand store, event bus, normalizers
 - [x] **Step 2** — "Execution First" Dashboard UI (Priority Feed + command input)
-- [ ] **Step 3** — Mock Context Engine (pre-filled responses, agent washups)
+- [x] **Step 3** — Mock Context Engine (pre-filled responses, agent washups)
 - [ ] **Step 4** — Block-level chat view (render Notion tables/galleries in bubbles)
 - [ ] Notion two-way sync (real webhooks + block injection)
 - [ ] WhatsApp DMA mock stream

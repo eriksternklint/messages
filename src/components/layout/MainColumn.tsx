@@ -7,6 +7,7 @@ import {
   IconWhatsApp,
 } from '@/components/icons';
 import { CommandInput } from '@/components/command/CommandInput';
+import { DemoActions } from '@/components/demo/DemoActions';
 import { cn, formatRelative, initials } from '@/lib/utils';
 import { useNodeStore } from '@/store';
 import type { Channel, Message } from '@/types';
@@ -105,6 +106,7 @@ function ChannelHeader({ channel }: { channel: Channel }) {
           {badge}
         </span>
         <span>{channel.memberIds.length} members</span>
+        <DemoActions channelId={channel.id} />
       </div>
     </div>
   );
