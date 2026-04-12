@@ -13,6 +13,12 @@ import { cn, formatRelative, initials } from '@/lib/utils';
 import { useNodeStore } from '@/store';
 import type { Channel, Message } from '@/types';
 
+// Module-level stable empty array. Returning a fresh `[]` from a
+// Zustand selector breaks React 18's `useSyncExternalStore` reference
+// check and triggers "Maximum update depth exceeded" — see
+// https://github.com/pmndrs/zustand/issues/1208.
+const EMPTY_IDS: readonly string[] = Object.freeze([]);
+
 /**
  * The center column — channel header, message list, and the
  * Universal Command Input. The command input is pre-filled with the
@@ -25,8 +31,10 @@ export function MainColumn() {
     activeChannelId ? s.channelsById[activeChannelId] : undefined,
   );
   const messagesById = useNodeStore((s) => s.messagesById);
-  const messageIds = useNodeStore((s) =>
-    activeChannelId ? s.messageIdsByChannel[activeChannelId] ?? [] : [],
+  const messageIds = useNodeStore(
+    (s) =>
+      (activeChannelId && s.messageIdsByChannel[activeChannelId]) ||
+      EMPTY_IDS,
   );
 
   if (!channel) {

@@ -1,5 +1,7 @@
 'use client';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import { IconCheck, IconClock, IconPlus } from '@/components/icons';
 import { cn, formatRelative } from '@/lib/utils';
 import { useNodeStore } from '@/store';
@@ -11,7 +13,12 @@ import type { ActionItem } from '@/types';
  * Notion push/pull sync lands in Step 3 via the Action Engine.
  */
 export function RightSidebar() {
-  const actions = useNodeStore((s) => Object.values(s.actionsById));
+  // `useShallow` does element-wise comparison so the new array
+  // produced by Object.values doesn't trip useSyncExternalStore's
+  // reference check (which would loop until React #185).
+  const actions = useNodeStore(
+    useShallow((s) => Object.values(s.actionsById)),
+  );
   const updateAction = useNodeStore((s) => s.updateAction);
 
   const open = actions.filter((a) => a.status === 'open');

@@ -1,5 +1,7 @@
 'use client';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import {
   IconBriefcase,
   IconHash,
@@ -26,7 +28,12 @@ const WORKSPACES: Array<{
 export function LeftSidebar() {
   const mode = useNodeStore((s) => s.mode);
   const setMode = useNodeStore((s) => s.setMode);
-  const channels = useNodeStore((s) => Object.values(s.channelsById));
+  // `useShallow` does element-wise comparison so the new array
+  // produced by Object.values doesn't trip useSyncExternalStore's
+  // reference check (which would loop until React #185).
+  const channels = useNodeStore(
+    useShallow((s) => Object.values(s.channelsById)),
+  );
   const activeChannelId = useNodeStore((s) => s.activeChannelId);
   const setActiveChannel = useNodeStore((s) => s.setActiveChannel);
 
