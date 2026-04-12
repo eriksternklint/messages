@@ -5,7 +5,7 @@ private execution into a single, minimalist UI. The metric is **Daily Active
 Seconds** — open the app, execute an AI-drafted response, run a slash command
 that mutates an external database, close the app.
 
-> **Status:** Phase 1, Step 1 complete — scaffolding + state layer.
+> **Status:** Phase 1, Step 2 complete — dashboard UI, Priority Feed, Universal Command Input.
 
 ## Tech
 
@@ -61,33 +61,41 @@ messages/
 ├── app/                         # Next.js App Router entry
 │   ├── globals.css
 │   ├── layout.tsx
-│   └── page.tsx                 # placeholder — Step 2 will replace
+│   └── page.tsx                 # renders <AppShell />
 ├── src/
-│   ├── types/                   # normalized data model
-│   │   ├── source.ts            # SourceKind, WorkspaceMode, PriorityBucket
-│   │   ├── message.ts           # Message + MessageBlock + Author + AI meta
-│   │   ├── action.ts            # ActionItem (Notion task mirror)
-│   │   ├── channel.ts           # Channel (chat / notion-mirror / whatsapp-chat)
-│   │   ├── agent.ts             # Agent (autonomous AI "Persons")
-│   │   ├── event.ts             # InboundEvent discriminated union
-│   │   └── index.ts
+│   ├── components/              # UI — hand-rolled Tailwind, Notion-Zen look
+│   │   ├── layout/
+│   │   │   ├── AppShell.tsx     # three-column grid + dev seed
+│   │   │   ├── LeftSidebar.tsx  # workspace switcher + channel list
+│   │   │   ├── MainColumn.tsx   # channel header + messages + composer
+│   │   │   └── RightSidebar.tsx # Global Task Sidebar (Notion mirror)
+│   │   ├── priority-feed/
+│   │   │   └── PriorityFeed.tsx # Action / Waiting / FYI / Noise
+│   │   ├── command/
+│   │   │   └── CommandInput.tsx # Universal Slash Command palette
+│   │   └── icons.tsx            # inline monochrome SVG icon set
+│   ├── lib/
+│   │   ├── utils.ts             # cn(), formatRelative(), initials()
+│   │   ├── seed.ts              # dev-only store seed
+│   │   └── events/              # event bus + per-source normalizers
+│   │       ├── bus.ts
+│   │       └── sources/{notion,whatsapp,agent}.ts
 │   ├── store/                   # Zustand root store + slices
-│   │   ├── useNodeStore.ts      # combined store, applyEvent reducer
-│   │   ├── slices/
-│   │   │   ├── messagesSlice.ts
-│   │   │   ├── actionsSlice.ts
-│   │   │   ├── workspaceSlice.ts
-│   │   │   ├── agentsSlice.ts
-│   │   │   └── priorityFeedSlice.ts
-│   │   └── index.ts
-│   └── lib/
-│       └── events/              # the event bus + per-source normalizers
-│           ├── bus.ts
-│           ├── sources/
-│           │   ├── notion.ts
-│           │   ├── whatsapp.ts
-│           │   └── agent.ts
-│           └── index.ts
+│   │   ├── useNodeStore.ts
+│   │   └── slices/
+│   │       ├── messagesSlice.ts
+│   │       ├── actionsSlice.ts
+│   │       ├── workspaceSlice.ts
+│   │       ├── agentsSlice.ts
+│   │       └── priorityFeedSlice.ts
+│   └── types/                   # normalized data model
+│       ├── source.ts            # SourceKind, WorkspaceMode, PriorityBucket
+│       ├── message.ts           # Message + MessageBlock + Author + AI meta
+│       ├── action.ts            # ActionItem (Notion task mirror)
+│       ├── channel.ts           # Channel (chat / notion-mirror / whatsapp-chat)
+│       ├── agent.ts             # Agent (autonomous AI "Persons")
+│       ├── event.ts             # InboundEvent discriminated union
+│       └── index.ts
 ├── .env.example                 # committed template
 ├── .env.local                   # gitignored — your secrets
 ├── tailwind.config.ts
@@ -99,7 +107,7 @@ messages/
 ## Roadmap
 
 - [x] **Step 1** — scaffolding, types, Zustand store, event bus, normalizers
-- [ ] **Step 2** — "Execution First" Dashboard UI (Priority Feed + command input)
+- [x] **Step 2** — "Execution First" Dashboard UI (Priority Feed + command input)
 - [ ] **Step 3** — Mock Context Engine (pre-filled responses, agent washups)
 - [ ] **Step 4** — Block-level chat view (render Notion tables/galleries in bubbles)
 - [ ] Notion two-way sync (real webhooks + block injection)
