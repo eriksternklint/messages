@@ -79,13 +79,10 @@ async function callClaude(
   const response = await client.messages.create({
     model,
     max_tokens: 200,
-    system: [
-      {
-        type: 'text',
-        text: SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
+    // Plain-string `system` for SDK compatibility. Once we move to a
+    // longer system prompt it's worth re-adding prompt caching via the
+    // beta namespace, but at this size the savings are negligible.
+    system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userText }],
   });
 
