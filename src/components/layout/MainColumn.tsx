@@ -6,6 +6,7 @@ import {
   IconSparkle,
   IconWhatsApp,
 } from '@/components/icons';
+import { BlockRenderer } from '@/components/chat/BlockRenderer';
 import { CommandInput } from '@/components/command/CommandInput';
 import { DemoActions } from '@/components/demo/DemoActions';
 import { cn, formatRelative, initials } from '@/lib/utils';
@@ -138,8 +139,10 @@ function MessageRow({ message }: { message: Message }) {
             </span>
           )}
         </div>
-        <div className="text-[13px] text-zen-ink mt-0.5 whitespace-pre-wrap leading-relaxed">
-          {message.rawText}
+        <div className="mt-1 space-y-2">
+          {message.blocks.map((block, i) => (
+            <BlockRenderer key={i} block={block} />
+          ))}
         </div>
         {message.ai?.contextSources &&
           message.ai.contextSources.length > 0 && (

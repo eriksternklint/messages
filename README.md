@@ -5,7 +5,7 @@ private execution into a single, minimalist UI. The metric is **Daily Active
 Seconds** — open the app, execute an AI-drafted response, run a slash command
 that mutates an external database, close the app.
 
-> **Status:** Phase 1, Step 3 complete — Mock Context Engine + AI Orchestrator + Agent Worker.
+> **Status:** Phase 1, Step 4 complete — Block-Level Chat View (Notion tables, galleries, action cards render inline in chat).
 
 ## Tech
 
@@ -72,6 +72,17 @@ messages/
 │   │   │   ├── LeftSidebar.tsx  # workspace switcher + channel list
 │   │   │   ├── MainColumn.tsx   # channel header + messages + composer
 │   │   │   └── RightSidebar.tsx # Global Task Sidebar (Notion mirror)
+│   │   ├── chat/
+│   │   │   ├── BlockRenderer.tsx    # dispatches MessageBlock → component
+│   │   │   └── blocks/              # one renderer per block type
+│   │   │       ├── TextBlock.tsx
+│   │   │       ├── MarkdownBlock.tsx
+│   │   │       ├── NotionPageRefBlock.tsx
+│   │   │       ├── NotionBlockEmbed.tsx
+│   │   │       ├── NotionTableBlock.tsx
+│   │   │       ├── NotionGalleryBlock.tsx
+│   │   │       ├── ActionCardBlock.tsx
+│   │   │       └── FileBlock.tsx
 │   │   ├── priority-feed/
 │   │   │   └── PriorityFeed.tsx # Action / Waiting / FYI / Noise
 │   │   ├── command/
@@ -121,7 +132,7 @@ messages/
 - [x] **Step 1** — scaffolding, types, Zustand store, event bus, normalizers
 - [x] **Step 2** — "Execution First" Dashboard UI (Priority Feed + command input)
 - [x] **Step 3** — Mock Context Engine (pre-filled responses, agent washups)
-- [ ] **Step 4** — Block-level chat view (render Notion tables/galleries in bubbles)
+- [x] **Step 4** — Block-level chat view (Notion tables/galleries/action cards in bubbles)
 - [ ] Notion two-way sync (real webhooks + block injection)
 - [ ] WhatsApp DMA mock stream
 - [ ] Slash command engine (`/notion-page`, `/hs-update-deal`, ...)

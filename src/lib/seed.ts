@@ -184,6 +184,118 @@ export function seedDevData(): void {
       },
     },
 
+    // ─── Block-level content ──────────────────────────────────────────
+    {
+      id: 'm:block-table',
+      source: 'notion',
+      sourceRef: { externalId: 'notion-page-q2' },
+      channelId: 'ch:q2-roadmap',
+      author: {
+        id: 'agent:pm',
+        name: 'PM Agent',
+        kind: 'agent',
+        agentPersona: 'Project Manager',
+      },
+      createdAt: mins(18),
+      blocks: [
+        {
+          type: 'text',
+          content: 'Q2 deliverables — live mirror of the planning table.',
+        },
+        {
+          type: 'notion-table',
+          tableId: 'notion-table-q2',
+          columns: ['Deliverable', 'Owner', 'Status', 'Due'],
+          rows: [
+            {
+              Deliverable: 'Platform migration',
+              Owner: 'Alex',
+              Status: 'In progress',
+              Due: 'May 14',
+            },
+            {
+              Deliverable: 'Onboarding redesign',
+              Owner: 'Mia',
+              Status: 'Review',
+              Due: 'Apr 28',
+            },
+            {
+              Deliverable: 'SOC2 packet',
+              Owner: 'Sam',
+              Status: 'Blocked',
+              Due: 'Apr 22',
+            },
+            {
+              Deliverable: 'Agent marketplace spike',
+              Owner: 'You',
+              Status: 'Not started',
+              Due: 'Jun 3',
+            },
+          ],
+        },
+        {
+          type: 'notion-page-ref',
+          pageId: 'notion-page-q2',
+          title: 'Q2 Planning — full doc',
+          url: 'https://www.notion.so/q2-planning',
+        },
+      ],
+      rawText:
+        'Q2 deliverables — live mirror of the planning table. Platform migration, Onboarding redesign, SOC2 packet, Agent marketplace spike.',
+      ai: { priority: 'fyi' },
+    },
+    {
+      id: 'm:block-gallery',
+      source: 'notion',
+      channelId: 'ch:design',
+      author: { id: 'u:mia', name: 'Mia Rao', kind: 'human' },
+      createdAt: mins(34),
+      blocks: [
+        {
+          type: 'text',
+          content:
+            'Onboarding direction candidates — pick your favorite for the Thursday review.',
+        },
+        {
+          type: 'notion-gallery',
+          galleryId: 'notion-gallery-onboarding',
+          items: [
+            { id: 'g1', title: 'Minimal — 3 steps' },
+            { id: 'g2', title: 'Guided tour' },
+            { id: 'g3', title: 'Progressive disclosure' },
+          ],
+        },
+        {
+          type: 'action-card',
+          title: 'Approve onboarding direction',
+          description:
+            'Locks the chosen variant and opens the hand-off Notion page for engineering.',
+          actions: [
+            {
+              id: 'approve',
+              label: 'Approve',
+              command: '/notion-update-status approved',
+            },
+            {
+              id: 'changes',
+              label: 'Request changes',
+              command: '/notion-comment',
+            },
+          ],
+        },
+      ],
+      rawText:
+        'Onboarding direction candidates — pick your favorite for the Thursday review.',
+      ai: {
+        priority: 'action',
+        intentTags: ['review-request', 'decision'],
+        draftedResponse:
+          "Going with progressive disclosure — it matches the v2 info architecture and doesn't require a new first-run state.",
+        contextSources: ['notion:onboarding-spec'],
+        confidence: 0.81,
+      },
+    },
+
     // ─── FYI ──────────────────────────────────────────────────────────
     {
       id: 'm:agent-1',
