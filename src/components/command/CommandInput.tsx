@@ -30,12 +30,12 @@ const COMMANDS: SlashCommand[] = [
   {
     command: '/update-block',
     args: '[text]',
-    description: 'Update a Notion block live',
+    description: 'Append a paragraph to the default Notion page',
   },
   {
-    command: '/hs-update-deal',
-    args: '[value]',
-    description: 'Push CRM update to HubSpot',
+    command: '/notion-search',
+    args: '[query]',
+    description: 'Search your Notion workspace',
   },
   {
     command: '/remind',
@@ -107,27 +107,12 @@ export function CommandInput({
     dispatch({ kind: 'message.created', message });
     if (quoteMessageId) setQuote(null);
 
-    // For slash commands, synthesize a system acknowledgement so the
-    // command cycle feels real in the MVP. Step 3 replaces this with
-    // actual API calls via the Action Engine.
+    // For slash commands, hit the server runner so the side-effect
+    // (Notion create/append/search) really happens, then dispatch
+    // the returned ack. If the route is unreachable (offline preview
+    // etc.) we fall back to a synthetic ack so the UX never stalls.
     if (trimmed.startsWith('/')) {
-      setTimeout(() => {
-        const ack: Message = {
-          id: `local:${Date.now()}-ack`,
-          source: 'system',
-          channelId,
-          author: { id: 'system', name: 'Node', kind: 'system' },
-          createdAt: new Date().toISOString(),
-          blocks: [
-            {
-              type: 'markdown',
-              content: `Executed \`${trimmed}\` — mocked. Real Notion / HubSpot / reminder calls arrive in Step 3.`,
-            },
-          ],
-          rawText: `Executed ${trimmed}`,
-        };
-        dispatch({ kind: 'message.created', message: ack });
-      }, 350);
+      runSlashCommandAsync(trimmed, channelId);
     }
 
     setText('');
@@ -230,4 +215,44 @@ export function CommandInput({
       </div>
     </div>
   );
+}
+
+/**
+ * Fire-and-forget POST to /api/commands/run. The runner returns a
+ * pre-built ack `Message`; we dispatch it through the same event bus
+ * the rest of the app uses so the orchestrator and store stay in sync.
+ */
+function runSlashCommandAsync(text: string, channelId: string): void {
+  fetch('/api/commands/run', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ text, channelId }),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(`HTTP ${res.status}: ${detail}`);
+      }
+      const data = (await res.json()) as { ackMessage: Message };
+      if (!data?.ackMessage) throw new Error('malformed response');
+      dispatch({ kind: 'message.created', message: data.ackMessage });
+    })
+    .catch((err: Error) => {
+      console.error('[command] runner failed', err);
+      const fallback: Message = {
+        id: `local:${Date.now()}-ack`,
+        source: 'system',
+        channelId,
+        author: { id: 'system', name: 'Node', kind: 'system' },
+        createdAt: new Date().toISOString(),
+        blocks: [
+          {
+            type: 'markdown',
+            content: `⚠ Couldn't execute \`${text}\`: ${err.message}`,
+          },
+        ],
+        rawText: `Failed to execute ${text}`,
+      };
+      dispatch({ kind: 'message.created', message: fallback });
+    });
 }
