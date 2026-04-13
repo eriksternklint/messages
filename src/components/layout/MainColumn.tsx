@@ -1,15 +1,17 @@
 'use client';
 
 import {
+  ChannelShortcuts,
+  ChannelTabPanel,
+} from '@/components/chat/ChannelShortcuts';
+import { MessageRow } from '@/components/chat/MessageRow';
+import {
   IconHash,
   IconPage,
-  IconSparkle,
   IconWhatsApp,
 } from '@/components/icons';
-import { BlockRenderer } from '@/components/chat/BlockRenderer';
 import { CommandInput } from '@/components/command/CommandInput';
 import { DemoActions } from '@/components/demo/DemoActions';
-import { cn, formatRelative, initials } from '@/lib/utils';
 import { useNodeStore } from '@/store';
 import type { Channel, Message } from '@/types';
 
@@ -39,30 +41,34 @@ export function MainColumn() {
 
   if (!channel) {
     return (
-      <div className="flex items-center justify-center text-zen-subtle text-sm">
+      <div className="flex items-center justify-center text-zen-subtle text-sm bg-zen-bg">
         Select a channel to get started.
       </div>
     );
   }
 
+  // Hide thread replies from the main timeline — they only appear in
+  // the ThreadPanel. The parent still shows its "N replies" link.
   const messages = messageIds
     .map((id) => messagesById[id])
-    .filter((m): m is Message => Boolean(m));
+    .filter((m): m is Message => Boolean(m))
+    .filter((m) => !m.threadId);
 
   const actionDraft = [...messages]
     .reverse()
     .find((m) => m.ai?.draftedResponse)?.ai?.draftedResponse;
 
   return (
-    <div className="flex flex-col min-w-0 min-h-0">
+    <div className="flex flex-col min-w-0 min-h-0 bg-zen-bg relative">
       <ChannelHeader channel={channel} />
+      <ChannelShortcuts channel={channel} />
       <div className="flex-1 overflow-y-auto px-8 py-6">
         {messages.length === 0 ? (
           <div className="text-center text-zen-subtle text-sm mt-20">
             No messages yet. Type below to start.
           </div>
         ) : (
-          <div className="space-y-4 max-w-3xl mx-auto">
+          <div className="space-y-3 max-w-3xl mx-auto">
             {messages.map((m) => (
               <MessageRow key={m.id} message={m} />
             ))}
@@ -77,6 +83,7 @@ export function MainColumn() {
           />
         </div>
       </div>
+      <ChannelTabPanel channel={channel} />
     </div>
   );
 }
@@ -96,11 +103,11 @@ function ChannelHeader({ channel }: { channel: Channel }) {
         : 'Channel';
 
   return (
-    <div className="border-b border-zen-border px-8 py-4 flex items-center justify-between flex-shrink-0">
+    <div className="border-b border-zen-border px-8 py-3 flex items-center justify-between flex-shrink-0 bg-zen-bg">
       <div className="flex items-center gap-3 min-w-0">
         <Icon className="h-4 w-4 text-zen-muted flex-shrink-0" />
         <div className="min-w-0">
-          <div className="text-sm font-medium text-zen-ink truncate">
+          <div className="text-sm font-semibold text-zen-ink truncate">
             {channel.name}
           </div>
           {channel.description && (
@@ -111,58 +118,10 @@ function ChannelHeader({ channel }: { channel: Channel }) {
         </div>
       </div>
       <div className="flex items-center gap-3 text-[11px] text-zen-subtle flex-shrink-0">
-        <span className="px-2 py-0.5 rounded-full bg-zen-surface border border-zen-border">
+        <span className="px-2 py-0.5 rounded-full bg-zen-canvas border border-zen-border">
           {badge}
         </span>
-        <span>{channel.memberIds.length} members</span>
         <DemoActions channelId={channel.id} />
-      </div>
-    </div>
-  );
-}
-
-function MessageRow({ message }: { message: Message }) {
-  return (
-    <div className="flex gap-3 group">
-      <div className="h-8 w-8 rounded-full bg-zen-surface border border-zen-border flex items-center justify-center text-[11px] font-medium text-zen-muted flex-shrink-0">
-        {initials(message.author.name)}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-[13px] font-medium text-zen-ink">
-            {message.author.name}
-          </span>
-          {message.author.kind === 'agent' && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zen-surface border border-zen-border text-zen-muted">
-              {message.author.agentPersona ?? 'Agent'}
-            </span>
-          )}
-          <span className="text-[11px] text-zen-subtle">
-            {formatRelative(message.createdAt)}
-          </span>
-          {message.ai?.priority === 'action' && (
-            <span className="text-[10px] text-zen-muted flex items-center gap-0.5">
-              <IconSparkle className="h-2.5 w-2.5" />
-              action
-            </span>
-          )}
-        </div>
-        <div className="mt-1 space-y-2">
-          {message.blocks.map((block, i) => (
-            <BlockRenderer key={i} block={block} />
-          ))}
-        </div>
-        {message.ai?.contextSources &&
-          message.ai.contextSources.length > 0 && (
-            <div
-              className={cn(
-                'mt-1 flex items-center gap-1 text-[10px] text-zen-subtle',
-              )}
-            >
-              <IconSparkle className="h-2.5 w-2.5" />
-              context: {message.ai.contextSources.join(', ')}
-            </div>
-          )}
       </div>
     </div>
   );

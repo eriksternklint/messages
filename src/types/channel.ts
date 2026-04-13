@@ -1,5 +1,12 @@
 import type { WorkspaceMode } from './source';
 
+export interface PinnedLink {
+  id: string;
+  label: string;
+  url: string;
+  kind: 'notion' | 'drive' | 'web' | 'figma';
+}
+
 /**
  * A conversational surface. Channels are not "just chat rooms" —
  * a `notion-mirror` channel is backed by a live Notion page, and a
@@ -23,4 +30,6 @@ export interface Channel {
    * Present only for the channel list ordering.
    */
   unreadCount?: number;
+  /** Pinned resource bar at the top of the channel (Notion docs, etc). */
+  pinnedLinks?: PinnedLink[];
 }

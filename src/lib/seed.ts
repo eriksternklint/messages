@@ -1,5 +1,5 @@
 import { useNodeStore } from '@/store';
-import type { ActionItem, Agent, Channel, Message } from '@/types';
+import type { ActionItem, Agent, Channel, Message, Person } from '@/types';
 
 /**
  * Dev-only seed. Called once on AppShell mount when the store is empty.
@@ -14,6 +14,69 @@ export function seedDevData(): void {
   const now = Date.now();
   const mins = (n: number) => new Date(now - n * 60_000).toISOString();
 
+  const people: Person[] = [
+    {
+      id: 'u:alex',
+      name: 'Alex Chen',
+      title: 'Engineering Lead',
+      email: 'alex@company.com',
+      username: 'alex',
+      online: true,
+      addedAt: new Date(now - 30 * 86_400_000).toISOString(),
+    },
+    {
+      id: 'u:sam',
+      name: 'Sam Patel',
+      title: 'Founder',
+      email: 'sam@company.com',
+      username: 'sam',
+      online: true,
+      addedAt: new Date(now - 60 * 86_400_000).toISOString(),
+    },
+    {
+      id: 'u:mia',
+      name: 'Mia Rao',
+      title: 'Product Designer',
+      email: 'mia@company.com',
+      username: 'mia',
+      online: false,
+      addedAt: new Date(now - 14 * 86_400_000).toISOString(),
+    },
+    {
+      id: 'u:mom',
+      name: 'Mom',
+      phone: '+1 555 0100',
+      addedAt: new Date(now - 90 * 86_400_000).toISOString(),
+    },
+    {
+      id: 'u:john',
+      name: 'John',
+      phone: '+1 555 0142',
+      addedAt: new Date(now - 45 * 86_400_000).toISOString(),
+    },
+    {
+      id: 'u:kate',
+      name: 'Kate',
+      phone: '+1 555 0167',
+      addedAt: new Date(now - 45 * 86_400_000).toISOString(),
+    },
+    {
+      id: 'u:lily',
+      name: 'Lily',
+      phone: '+1 555 0181',
+      addedAt: new Date(now - 45 * 86_400_000).toISOString(),
+    },
+    {
+      id: 'u:you',
+      name: 'You',
+      title: 'Builder',
+      username: 'you',
+      online: true,
+      addedAt: new Date(now - 120 * 86_400_000).toISOString(),
+    },
+  ];
+  people.forEach((p) => store.addPerson(p));
+
   const channels: Channel[] = [
     {
       id: 'ch:q2-roadmap',
@@ -25,6 +88,20 @@ export function seedDevData(): void {
       memberIds: ['u:you', 'u:alex', 'u:sam'],
       agentIds: ['agent:pm'],
       lastMessageAt: mins(12),
+      pinnedLinks: [
+        {
+          id: 'pin:q2-doc',
+          label: 'Q2 Planning doc',
+          url: 'https://www.notion.so/q2-planning',
+          kind: 'notion',
+        },
+        {
+          id: 'pin:okr-template',
+          label: 'OKR template',
+          url: 'https://www.notion.so/okr-template',
+          kind: 'notion',
+        },
+      ],
     },
     {
       id: 'ch:engineering',
@@ -34,6 +111,14 @@ export function seedDevData(): void {
       description: 'Platform and infra.',
       memberIds: ['u:you', 'u:alex', 'u:sam', 'u:mia'],
       lastMessageAt: mins(41),
+      pinnedLinks: [
+        {
+          id: 'pin:eng-runbook',
+          label: 'Runbook',
+          url: 'https://www.notion.so/runbook',
+          kind: 'notion',
+        },
+      ],
     },
     {
       id: 'ch:design',
@@ -182,6 +267,48 @@ export function seedDevData(): void {
         contextSources: ['notion:onboarding-spec'],
         confidence: 0.84,
       },
+    },
+
+    // ─── Thread demo ──────────────────────────────────────────────────
+    {
+      id: 'm:thread-1',
+      source: 'notion',
+      channelId: 'ch:q2-roadmap',
+      threadId: 'm:notion-1',
+      author: { id: 'u:sam', name: 'Sam Patel', kind: 'human' },
+      createdAt: mins(10),
+      blocks: [
+        {
+          type: 'text',
+          content:
+            '+1 on reviewing the platform migration scope — I think the Jan→Feb slip is what worries investors.',
+        },
+      ],
+      rawText:
+        '+1 on reviewing the platform migration scope — I think the Jan→Feb slip is what worries investors.',
+      ai: { priority: 'fyi' },
+    },
+    {
+      id: 'm:thread-2',
+      source: 'notion',
+      channelId: 'ch:q2-roadmap',
+      threadId: 'm:notion-1',
+      author: {
+        id: 'agent:pm',
+        name: 'PM Agent',
+        kind: 'agent',
+        agentPersona: 'Project Manager',
+      },
+      createdAt: mins(9),
+      blocks: [
+        {
+          type: 'markdown',
+          content:
+            "I pulled the slip analysis — **2 of 5 items** shifted because of the vendor review. Suggesting we re-baseline Feb 1.",
+        },
+      ],
+      rawText: 'Pulled the slip analysis. Suggesting we re-baseline Feb 1.',
+      ai: { priority: 'fyi' },
     },
 
     // ─── Block-level content ──────────────────────────────────────────

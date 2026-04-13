@@ -5,7 +5,9 @@ import type { InboundEvent } from '@/types';
 import { actionsSlice, type ActionsSlice } from './slices/actionsSlice';
 import { agentsSlice, type AgentsSlice } from './slices/agentsSlice';
 import { messagesSlice, type MessagesSlice } from './slices/messagesSlice';
+import { peopleSlice, type PeopleSlice } from './slices/peopleSlice';
 import { priorityFeedSlice, type PriorityFeedSlice } from './slices/priorityFeedSlice';
+import { uiSlice, type UISlice } from './slices/uiSlice';
 import { workspaceSlice, type WorkspaceSlice } from './slices/workspaceSlice';
 
 /**
@@ -24,7 +26,9 @@ export type NodeStore = MessagesSlice &
   ActionsSlice &
   WorkspaceSlice &
   AgentsSlice &
-  PriorityFeedSlice & {
+  PriorityFeedSlice &
+  PeopleSlice &
+  UISlice & {
     applyEvent: (event: InboundEvent) => void;
   };
 
@@ -34,6 +38,8 @@ export const useNodeStore = create<NodeStore>()((set, get, store) => ({
   ...workspaceSlice(set, get, store),
   ...agentsSlice(set, get, store),
   ...priorityFeedSlice(set, get, store),
+  ...peopleSlice(set, get, store),
+  ...uiSlice(set, get, store),
 
   applyEvent: (event) => {
     switch (event.kind) {

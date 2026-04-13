@@ -24,8 +24,25 @@ export const messagesSlice: StateCreator<MessagesSlice, [], [], MessagesSlice> =
     set((state) => {
       const existing = state.messagesById[message.id];
       const ids = state.messageIdsByChannel[message.channelId] ?? [];
+      const nextMessagesById = {
+        ...state.messagesById,
+        [message.id]: message,
+      };
+
+      // If this is a thread reply, bump the parent's reply count so
+      // the "N replies" label under the parent stays fresh.
+      if (message.threadId && !existing) {
+        const parent = nextMessagesById[message.threadId];
+        if (parent) {
+          nextMessagesById[message.threadId] = {
+            ...parent,
+            threadReplyCount: (parent.threadReplyCount ?? 0) + 1,
+          };
+        }
+      }
+
       return {
-        messagesById: { ...state.messagesById, [message.id]: message },
+        messagesById: nextMessagesById,
         messageIdsByChannel: existing
           ? state.messageIdsByChannel
           : {

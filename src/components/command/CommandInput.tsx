@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { QuotedMessage, useQuotePreview } from '@/components/chat/QuotedMessage';
 import { IconSend, IconSparkle } from '@/components/icons';
 import { dispatch } from '@/lib/events';
 import { cn } from '@/lib/utils';
+import { useNodeStore } from '@/store';
 import type { Message } from '@/types';
 
 interface SlashCommand {
@@ -53,6 +55,9 @@ export function CommandInput({
   const [text, setText] = useState(initialValue ?? '');
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const quoteMessageId = useNodeStore((s) => s.quoteMessageId);
+  const setQuote = useNodeStore((s) => s.setQuote);
+  const quotePreview = useQuotePreview(quoteMessageId);
 
   // When the active channel or the AI-drafted response changes, reset
   // the input so the user always sees the current pre-fill.
@@ -91,8 +96,16 @@ export function CommandInput({
       createdAt: new Date().toISOString(),
       blocks: [{ type: 'text', content: trimmed }],
       rawText: trimmed,
+      replyTo: quotePreview
+        ? {
+            messageId: quotePreview.messageId,
+            authorName: quotePreview.authorName,
+            preview: quotePreview.preview,
+          }
+        : undefined,
     };
     dispatch({ kind: 'message.created', message });
+    if (quoteMessageId) setQuote(null);
 
     // For slash commands, synthesize a system acknowledgement so the
     // command cycle feels real in the MVP. Step 3 replaces this with
@@ -171,6 +184,14 @@ export function CommandInput({
           <IconSparkle className="h-3 w-3" />
           AI drafted this response — edit or send as is
         </div>
+      )}
+
+      {quotePreview && (
+        <QuotedMessage
+          authorName={quotePreview.authorName}
+          preview={quotePreview.preview}
+          onDismiss={() => setQuote(null)}
+        />
       )}
 
       <div

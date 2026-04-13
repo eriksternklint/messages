@@ -76,9 +76,23 @@ export interface Message {
   channelId: string;
   /** If this is a thread reply, the parent message id. */
   threadId?: string;
+  /** Denormalized counter — rendered as "N replies" under a parent. */
+  threadReplyCount?: number;
+  /** WhatsApp-style inline quote attached to this message. */
+  replyTo?: {
+    messageId: string;
+    authorName: string;
+    preview: string;
+  };
   author: Author;
   createdAt: string;
   editedAt?: string;
+  /** Explicit "edited" flag, separate from editedAt for UI states. */
+  edited?: boolean;
+  /** User-toggled "mark unread" flag — purely local state. */
+  unread?: boolean;
+  /** User-set reminder timestamp — surfaces in the Priority Feed. */
+  remindAt?: string;
   blocks: MessageBlock[];
   /** Flattened text (derived from blocks) for search and NLP. */
   rawText: string;

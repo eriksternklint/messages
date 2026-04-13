@@ -24,3 +24,17 @@ export type WorkspaceMode = 'work' | 'personal' | 'combined';
  * Replaces traditional unread-dot notifications.
  */
 export type PriorityBucket = 'action' | 'fyi' | 'noise' | 'waiting';
+
+/**
+ * The primary navigation views in the left rail. Each view swaps the
+ * main column layout — "inbox" is the default Priority Feed + channel
+ * timeline, "threads" is a flat feed of thread replies, "tasks" pivots
+ * the tasks sidebar into the main column, etc. Similar to the
+ * Slack-style view switcher.
+ */
+export type ViewMode =
+  | 'inbox'
+  | 'threads'
+  | 'tasks'
+  | 'mentions'
+  | 'drafts';
