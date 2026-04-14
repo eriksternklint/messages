@@ -239,7 +239,7 @@ function handleAgentPrompt(args: {
   channelsById: Record<string, Channel>;
   messageIdsByChannel: Record<string, string[]>;
   peopleById: Record<string, Person>;
-  activeChannelId: string | null;
+  activeChannelId: string | null | undefined;
   setActiveChannel: (id: string) => void;
 }): { reply: string; actions: AgentAction[] } {
   const { prompt, messagesById, channelsById, peopleById, activeChannelId } = args;
@@ -339,7 +339,7 @@ function performSend(args: {
   messagesById: Record<string, Message>;
   channelsById: Record<string, Channel>;
   peopleById: Record<string, Person>;
-  activeChannelId: string | null;
+  activeChannelId: string | null | undefined;
 }): { reply: string; actions: AgentAction[] } {
   const person = findPerson(args.targetName, args.peopleById);
   if (!person) {
@@ -502,7 +502,7 @@ function summarizeChannel(
 }
 
 function draftReply(
-  channelId: string | null,
+  channelId: string | null | undefined,
   channelsById: Record<string, Channel>,
   messagesById: Record<string, Message>,
 ): { reply: string; actions: AgentAction[] } {
