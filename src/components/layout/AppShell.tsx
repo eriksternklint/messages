@@ -2,15 +2,17 @@
 
 import { useEffect } from 'react';
 
-import { AIChatPanel } from '@/components/ai/AIChatPanel';
 import { AISearchBar } from '@/components/ai/AISearchBar';
 import { CreateModal } from '@/components/modals/CreateModal';
+import { StartChatModal } from '@/components/modals/StartChatModal';
 import { installAutoDemo } from '@/lib/agents/auto-demo';
+import { installPeopleChatter } from '@/lib/agents/people-chatter';
 import { installOrchestrator } from '@/lib/ai';
 import { seedDevData } from '@/lib/seed';
 import { useNodeStore } from '@/store';
 
 import { ContextSidebar } from './ContextSidebar';
+import { OrgDirectory } from './OrgDirectory';
 import { TopBar } from './TopBar';
 import { ViewRail } from './ViewRail';
 import { WorkspacePanel } from './WorkspacePanel';
@@ -37,6 +39,7 @@ export function AppShell() {
       seedDevData();
     }
     installAutoDemo();
+    installPeopleChatter();
   }, []);
 
   return (
@@ -51,8 +54,9 @@ export function AppShell() {
       {/* Floating overlays */}
       <WorkspacePanel />
       <CreateModal />
+      <StartChatModal />
+      <OrgDirectory />
       <AISearchBar />
-      <AIChatPanel />
     </div>
   );
 }

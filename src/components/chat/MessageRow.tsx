@@ -179,7 +179,7 @@ export function MessageRow({
         ) : (
           <div className="mt-1 space-y-2">
             {message.blocks.map((block, i) => (
-              <BlockRenderer key={i} block={block} />
+              <BlockRenderer key={i} block={block} message={message} />
             ))}
           </div>
         )}

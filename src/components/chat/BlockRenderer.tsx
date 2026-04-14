@@ -1,10 +1,11 @@
-import type { MessageBlock } from '@/types';
+import type { Message, MessageBlock } from '@/types';
 
 import { ActionCardBlock } from './blocks/ActionCardBlock';
 import { FileBlock } from './blocks/FileBlock';
 import { MarkdownBlock } from './blocks/MarkdownBlock';
 import { NotionBlockEmbed } from './blocks/NotionBlockEmbed';
 import { NotionGalleryBlock } from './blocks/NotionGalleryBlock';
+import { NotionLivePageBlock } from './blocks/NotionLivePageBlock';
 import { NotionPageRefBlock } from './blocks/NotionPageRefBlock';
 import { NotionTableBlock } from './blocks/NotionTableBlock';
 import { TextBlock } from './blocks/TextBlock';
@@ -15,7 +16,13 @@ import { TextBlock } from './blocks/TextBlock';
  * check via the `never` fallthrough will catch any new block type
  * added to the union that forgets a renderer.
  */
-export function BlockRenderer({ block }: { block: MessageBlock }) {
+export function BlockRenderer({
+  block,
+  message,
+}: {
+  block: MessageBlock;
+  message: Message;
+}) {
   switch (block.type) {
     case 'text':
       return <TextBlock block={block} />;
@@ -29,6 +36,8 @@ export function BlockRenderer({ block }: { block: MessageBlock }) {
       return <NotionTableBlock block={block} />;
     case 'notion-gallery':
       return <NotionGalleryBlock block={block} />;
+    case 'notion-live-page':
+      return <NotionLivePageBlock block={block} message={message} />;
     case 'action-card':
       return <ActionCardBlock block={block} />;
     case 'file':

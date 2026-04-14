@@ -410,7 +410,19 @@ function ListingDetail({
         </div>
         <div className="space-y-2 border border-zen-border rounded-md p-4 bg-zen-canvas/50">
           {listing.demo.response.map((block, i) => (
-            <BlockRenderer key={i} block={block} />
+            <BlockRenderer
+              key={i}
+              block={block}
+              message={{
+                id: `demo:${listing.id}-${i}`,
+                source: 'system',
+                channelId: 'demo',
+                author: { id: 'system', name: 'Demo', kind: 'system' },
+                createdAt: new Date().toISOString(),
+                blocks: listing.demo.response,
+                rawText: '',
+              }}
+            />
           ))}
         </div>
       </div>

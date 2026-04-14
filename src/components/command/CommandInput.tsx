@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { QuotedMessage, useQuotePreview } from '@/components/chat/QuotedMessage';
-import { IconSend, IconSparkle } from '@/components/icons';
+import { IconPage, IconSend, IconSparkle } from '@/components/icons';
 import { dispatch } from '@/lib/events';
 import { cn } from '@/lib/utils';
 import { useNodeStore } from '@/store';
-import type { Message } from '@/types';
+import type { Message, MessageBlock, NotionLiveBlock } from '@/types';
 
 interface SlashCommand {
   command: string;
@@ -107,13 +107,21 @@ export function CommandInput({
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    // Auto-detect markdown: bold/italic, headings, lists, code fences,
+    // blockquotes — any of these promote the block from plain text to
+    // markdown so the receiver renders the formatting.
+    const looksMarkdown = /(\*\*|__|`|^#|^- |^\d+\. |^>|^```)/m.test(trimmed);
+    const block: MessageBlock = looksMarkdown
+      ? { type: 'markdown', content: trimmed }
+      : { type: 'text', content: trimmed };
+
     const message: Message = {
       id: `local:${Date.now()}`,
       source: 'node-channel',
       channelId,
       author: { id: 'u:you', name: 'You', kind: 'human' },
       createdAt: new Date().toISOString(),
-      blocks: [{ type: 'text', content: trimmed }],
+      blocks: [block],
       rawText: trimmed,
       replyTo: quotePreview
         ? {
@@ -136,6 +144,106 @@ export function CommandInput({
 
     setText('');
     setDraftMode(false);
+  }
+
+  /**
+   * Wraps the current selection (or inserts a placeholder) with the
+   * given before/after fragments. Used by the bold/italic/code buttons.
+   */
+  function wrapSelection(before: string, after = before, placeholder = 'text') {
+    const ta = textareaRef.current;
+    if (!ta) {
+      setText((t) => `${t}${before}${placeholder}${after}`);
+      return;
+    }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = text.slice(start, end) || placeholder;
+    const next = `${text.slice(0, start)}${before}${selected}${after}${text.slice(end)}`;
+    setText(next);
+    setDraftMode(false);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const cursorStart = start + before.length;
+      ta.setSelectionRange(cursorStart, cursorStart + selected.length);
+    });
+  }
+
+  /** Prefix the current line(s) with a marker — bullet list, numbered, quote. */
+  function prefixLine(prefix: string) {
+    const ta = textareaRef.current;
+    if (!ta) {
+      setText((t) => `${prefix}${t}`);
+      return;
+    }
+    const start = ta.selectionStart;
+    // Find start of the current line.
+    const before = text.slice(0, start);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const next = `${text.slice(0, lineStart)}${prefix}${text.slice(lineStart)}`;
+    setText(next);
+    setDraftMode(false);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + prefix.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  }
+
+  /**
+   * Insert a brand new live Notion page into the channel — with a
+   * starter section, a todo, and a math table. Goes through dispatch
+   * so the receiver and store both see it.
+   */
+  function insertLivePage() {
+    const pageId = `lp:${Date.now()}`;
+    const blocks: NotionLiveBlock[] = [
+      { id: `${pageId}:h`, type: 'heading', level: 2, text: 'Untitled section' },
+      {
+        id: `${pageId}:p`,
+        type: 'paragraph',
+        text: 'Edit me. Everyone in this channel sees the same page in real time.',
+      },
+      {
+        id: `${pageId}:t`,
+        type: 'todo',
+        text: 'A first task',
+        checked: false,
+      },
+      {
+        id: `${pageId}:tbl`,
+        type: 'table',
+        columns: ['Item', 'Owner', 'Amount'],
+        rows: [
+          {
+            id: `${pageId}:r1`,
+            cells: { Item: 'Onboarding swag', Owner: 'You', Amount: '120' },
+          },
+          {
+            id: `${pageId}:r2`,
+            cells: { Item: 'Notion seats', Owner: 'You', Amount: '90' },
+          },
+        ],
+        hasFormulas: true,
+      },
+    ];
+    const liveBlock: MessageBlock = {
+      type: 'notion-live-page',
+      pageId,
+      title: 'Untitled live page',
+      icon: '📄',
+      blocks,
+    };
+    const message: Message = {
+      id: `local:lp-${Date.now()}`,
+      source: 'node-channel',
+      channelId,
+      author: { id: 'u:you', name: 'You', kind: 'human' },
+      createdAt: new Date().toISOString(),
+      blocks: [liveBlock],
+      rawText: 'Created a live Notion page',
+    };
+    dispatch({ kind: 'message.created', message });
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -236,48 +344,171 @@ export function CommandInput({
 
       <div
         className={cn(
-          'flex items-end gap-2 border rounded-lg px-3 py-2 transition-colors bg-white',
+          'flex flex-col gap-1 border rounded-lg px-2 pt-1.5 pb-2 transition-colors bg-white',
           focused ? 'border-zen-ink/60 shadow-zen-soft' : 'border-zen-border',
           draftMode && 'bg-zen-accentSoft/40 border-zen-accent/40',
         )}
       >
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={onKeyDown}
-          onClick={onClick}
-          onContextMenu={onContextMenu}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          placeholder="Message, or type / for commands"
-          rows={1}
-          className={cn(
-            'flex-1 resize-none bg-transparent outline-none leading-relaxed py-1 placeholder:text-zen-subtle',
-            draftMode
-              ? 'italic text-[15px] text-zen-subtle'
-              : 'text-[13px] text-zen-ink',
-          )}
-        />
-        <button
-          onClick={send}
-          disabled={!text.trim()}
-          className={cn(
-            'flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center transition-colors shadow-zen-soft',
-            text.trim()
-              ? 'bg-zen-accent text-white hover:bg-[#1a6fc5]'
-              : 'bg-zen-surface text-zen-subtle cursor-not-allowed',
-          )}
-          aria-label="Send"
-        >
-          <IconSend className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5 px-1">
+          <ToolbarButton
+            label="B"
+            tooltip="Bold (markdown)"
+            bold
+            onClick={() => wrapSelection('**')}
+          />
+          <ToolbarButton
+            label="I"
+            tooltip="Italic"
+            italic
+            onClick={() => wrapSelection('*')}
+          />
+          <ToolbarButton
+            label="<>"
+            tooltip="Inline code"
+            mono
+            onClick={() => wrapSelection('`')}
+          />
+          <ToolbarDivider />
+          <ToolbarButton
+            label="H1"
+            tooltip="Heading 1"
+            onClick={() => prefixLine('# ')}
+          />
+          <ToolbarButton
+            label="H2"
+            tooltip="Heading 2"
+            onClick={() => prefixLine('## ')}
+          />
+          <ToolbarDivider />
+          <ToolbarButton
+            label="•"
+            tooltip="Bulleted list"
+            onClick={() => prefixLine('- ')}
+          />
+          <ToolbarButton
+            label="1."
+            tooltip="Numbered list"
+            onClick={() => prefixLine('1. ')}
+          />
+          <ToolbarButton
+            label="☐"
+            tooltip="To-do"
+            onClick={() => prefixLine('- [ ] ')}
+          />
+          <ToolbarDivider />
+          <ToolbarButton
+            label="❝"
+            tooltip="Quote"
+            onClick={() => prefixLine('> ')}
+          />
+          <ToolbarButton
+            label="💡"
+            tooltip="Callout"
+            onClick={() => prefixLine('> 💡 ')}
+          />
+          <ToolbarButton
+            label="```"
+            tooltip="Code block"
+            mono
+            onClick={() => wrapSelection('\n```\n', '\n```\n', 'code')}
+          />
+          <ToolbarButton
+            label="| |"
+            tooltip="Markdown table"
+            mono
+            onClick={() =>
+              wrapSelection(
+                '\n| Item | Owner | Amount |\n| --- | --- | --- |\n| ',
+                ' |  |  |\n',
+                '',
+              )
+            }
+          />
+          <ToolbarDivider />
+          <button
+            onClick={insertLivePage}
+            className="ml-auto h-6 px-2 rounded-md flex items-center gap-1 text-[10px] font-semibold text-white bg-zen-accent hover:bg-[#1a6fc5] transition-colors"
+            title="Insert a collaborative Notion page (live, agent-editable)"
+          >
+            <IconPage className="h-3 w-3" />
+            Live page
+          </button>
+        </div>
+        <div className="flex items-end gap-2 px-1">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={onKeyDown}
+            onClick={onClick}
+            onContextMenu={onContextMenu}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="Message, or type / for commands"
+            rows={1}
+            className={cn(
+              'flex-1 resize-none bg-transparent outline-none leading-relaxed py-1 placeholder:text-zen-subtle',
+              draftMode
+                ? 'italic text-[15px] text-zen-subtle'
+                : 'text-[13px] text-zen-ink',
+            )}
+          />
+          <button
+            onClick={send}
+            disabled={!text.trim()}
+            className={cn(
+              'flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center transition-colors shadow-zen-soft',
+              text.trim()
+                ? 'bg-zen-accent text-white hover:bg-[#1a6fc5]'
+                : 'bg-zen-surface text-zen-subtle cursor-not-allowed',
+            )}
+            aria-label="Send"
+          >
+            <IconSend className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
       <div className="mt-1.5 flex items-center justify-between text-[10px] text-zen-subtle px-1">
         <span>Enter to send · Shift+Enter for newline · / for commands</span>
       </div>
     </div>
   );
+}
+
+function ToolbarButton({
+  label,
+  tooltip,
+  onClick,
+  bold,
+  italic,
+  mono,
+}: {
+  label: string;
+  tooltip: string;
+  onClick: () => void;
+  bold?: boolean;
+  italic?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <button
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      title={tooltip}
+      className={cn(
+        'h-6 min-w-[24px] px-1 rounded text-[11px] text-zen-muted hover:text-zen-ink hover:bg-zen-surface transition-colors flex items-center justify-center',
+        bold && 'font-bold',
+        italic && 'italic',
+        mono && 'font-mono',
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ToolbarDivider() {
+  return <span className="h-4 w-px bg-zen-border mx-1" />;
 }
 
 /**

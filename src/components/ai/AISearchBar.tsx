@@ -28,7 +28,7 @@ export function AISearchBar() {
   const open = useNodeStore((s) => s.searchOpen);
   const setOpen = useNodeStore((s) => s.setSearchOpen);
   const setActiveChannel = useNodeStore((s) => s.setActiveChannel);
-  const setAIPanelOpen = useNodeStore((s) => s.setAIPanelOpen);
+  const setAIAgentOpen = useNodeStore((s) => s.setAIAgentOpen);
   const messagesById = useNodeStore((s) => s.messagesById);
   const channelsById = useNodeStore((s) => s.channelsById);
 
@@ -66,7 +66,7 @@ export function AISearchBar() {
         sub: 'Opens the Node Assistant with this question',
         onSelect: () => {
           setOpen(false);
-          setAIPanelOpen(true);
+          setAIAgentOpen(true);
         },
       });
     }
@@ -108,7 +108,7 @@ export function AISearchBar() {
     }
 
     return results;
-  }, [query, channelsById, messagesById, setActiveChannel, setAIPanelOpen, setOpen]);
+  }, [query, channelsById, messagesById, setActiveChannel, setAIAgentOpen, setOpen]);
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown') {

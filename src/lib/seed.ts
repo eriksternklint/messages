@@ -1,6 +1,8 @@
 import { useNodeStore } from '@/store';
 import type { ActionItem, Agent, Channel, Message, Person } from '@/types';
 
+import { generateOrgPeople } from './seed-people';
+
 /**
  * Dev-only seed. Called once on AppShell mount when the store is empty.
  * Populates a believable slice of messages, channels, tasks, and agents
@@ -85,6 +87,11 @@ export function seedDevData(): void {
     },
   ];
   people.forEach((p) => store.addPerson(p));
+
+  // Seed the wider org directory — 100 generated colleagues across
+  // 8 teams. Their IDs (`u:p1`–`u:p100`) are stable so the auto-chatter
+  // loop can target them across reloads.
+  generateOrgPeople().forEach((p) => store.addPerson(p));
 
   const channels: Channel[] = [
     {
@@ -388,6 +395,93 @@ export function seedDevData(): void {
       ],
       rawText:
         'Q2 deliverables — live mirror of the planning table. Platform migration, Onboarding redesign, SOC2 packet, Agent marketplace spike.',
+      ai: { priority: 'fyi' },
+    },
+    {
+      id: 'm:live-page-launch',
+      source: 'notion',
+      sourceRef: { externalId: 'notion-live-launch' },
+      channelId: 'ch:q2-roadmap',
+      author: { id: 'u:sam', name: 'Sam Patel', kind: 'human' },
+      createdAt: mins(11),
+      blocks: [
+        {
+          type: 'text',
+          content: 'Dropping the live launch page here — edit anything, agents will too.',
+        },
+        {
+          type: 'notion-live-page',
+          pageId: 'live:launch-prep',
+          title: 'Launch prep — w/c Apr 21',
+          icon: '🚀',
+          url: 'https://www.notion.so/launch-prep',
+          blocks: [
+            {
+              id: 'lp-h-1',
+              type: 'heading',
+              level: 2,
+              text: 'Goals for the week',
+            },
+            {
+              id: 'lp-p-1',
+              type: 'paragraph',
+              text: 'Get the staging build green, lock the launch copy, and confirm the day-of run of show.',
+            },
+            {
+              id: 'lp-callout',
+              type: 'callout',
+              emoji: '⚠️',
+              text: 'SOC2 packet is the long pole — sync with Sam before EOD Tuesday.',
+            },
+            {
+              id: 'lp-todo-1',
+              type: 'todo',
+              text: 'Cut RC build and ship to staging',
+              checked: true,
+            },
+            {
+              id: 'lp-todo-2',
+              type: 'todo',
+              text: 'Lock launch blog copy with marketing',
+              checked: false,
+            },
+            {
+              id: 'lp-todo-3',
+              type: 'todo',
+              text: 'Schedule day-of run of show with on-call',
+              checked: false,
+            },
+            {
+              id: 'lp-budget',
+              type: 'table',
+              columns: ['Line item', 'Owner', 'Amount'],
+              rows: [
+                {
+                  id: 'lp-b1',
+                  cells: { 'Line item': 'Launch swag', Owner: 'Mia', Amount: '1200' },
+                },
+                {
+                  id: 'lp-b2',
+                  cells: { 'Line item': 'Press outreach', Owner: 'Sam', Amount: '850' },
+                },
+                {
+                  id: 'lp-b3',
+                  cells: { 'Line item': 'Demo video', Owner: 'Alex', Amount: '2400' },
+                },
+              ],
+              hasFormulas: true,
+            },
+            {
+              id: 'lp-code',
+              type: 'code',
+              language: 'bash',
+              text: 'pnpm release --tag launch-w17\npnpm post-release --notify',
+            },
+          ],
+        },
+      ],
+      rawText:
+        'Launch prep — w/c Apr 21. Goals: green staging, locked copy, run of show. Live page with budget table.',
       ai: { priority: 'fyi' },
     },
     {

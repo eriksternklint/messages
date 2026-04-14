@@ -16,6 +16,29 @@ export interface Author {
  * interactive Notion references that render as live React components
  * inside the chat bubble.
  */
+/**
+ * Editable blocks inside a live Notion page embed. A `notion-live-page`
+ * contains an ordered list of these — when the user edits, the whole
+ * message is dispatched through `message.updated` so all viewers see
+ * the same state.
+ */
+export type NotionLiveBlock =
+  | { id: string; type: 'heading'; level: 1 | 2 | 3; text: string }
+  | { id: string; type: 'paragraph'; text: string }
+  | { id: string; type: 'bullet'; text: string }
+  | { id: string; type: 'todo'; text: string; checked: boolean }
+  | { id: string; type: 'callout'; emoji: string; text: string }
+  | { id: string; type: 'code'; language: string; text: string }
+  | { id: string; type: 'divider' }
+  | {
+      id: string;
+      type: 'table';
+      columns: string[];
+      rows: Array<{ id: string; cells: Record<string, string> }>;
+      /** If true, render a "sum" row that totals numeric columns. */
+      hasFormulas?: boolean;
+    };
+
 export type MessageBlock =
   | { type: 'text'; content: string }
   | { type: 'markdown'; content: string }
@@ -43,7 +66,20 @@ export type MessageBlock =
       description?: string;
       actions: Array<{ id: string; label: string; command?: string }>;
     }
-  | { type: 'file'; name: string; url: string; mime: string };
+  | { type: 'file'; name: string; url: string; mime: string }
+  | {
+      /**
+       * A live collaborative Notion page embedded inline in a chat. The
+       * blocks can be edited by the user or mutated by an agent via
+       * `message.updated` — the message is the single source of truth.
+       */
+      type: 'notion-live-page';
+      pageId: string;
+      title: string;
+      icon?: string;
+      url?: string;
+      blocks: NotionLiveBlock[];
+    };
 
 /** AI-layer enrichment attached by the Orchestration Layer. */
 export interface MessageAIMeta {

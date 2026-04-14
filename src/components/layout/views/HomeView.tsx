@@ -12,15 +12,17 @@ import {
   IconHash,
   IconLayers,
   IconPage,
+  IconPencil,
   IconPin,
   IconPlus,
   IconRobot,
   IconUser,
   IconWhatsApp,
 } from '@/components/icons';
+import { dispatch } from '@/lib/events';
 import { cn } from '@/lib/utils';
 import { useNodeStore } from '@/store';
-import type { Channel } from '@/types';
+import type { Agent, Channel, Message } from '@/types';
 
 import { MainColumn } from '../MainColumn';
 
@@ -50,10 +52,54 @@ export function HomeView() {
   const setActiveChannel = useNodeStore((s) => s.setActiveChannel);
   const openCreateModal = useNodeStore((s) => s.openCreateModal);
   const setView = useNodeStore((s) => s.setView);
+  const setStartChatOpen = useNodeStore((s) => s.setStartChatOpen);
+  const upsertChannel = useNodeStore((s) => s.upsertChannel);
+  const channelsById = useNodeStore((s) => s.channelsById);
 
   const visibleChannels = channels.filter(
     (c) => mode === 'combined' || c.workspace === mode,
   );
+
+  function openAgentDM(agent: Agent) {
+    // Find or create a DM channel with this agent.
+    const existing = Object.values(channelsById).find(
+      (c) =>
+        c.kind === 'dm' &&
+        c.memberIds.length === 2 &&
+        c.memberIds.includes('u:you') &&
+        c.memberIds.includes(agent.id),
+    );
+    if (existing) {
+      setActiveChannel(existing.id);
+      return;
+    }
+    const channel: Channel = {
+      id: `dm:${agent.id}`,
+      kind: 'dm',
+      name: agent.name,
+      workspace: 'work',
+      memberIds: ['u:you', agent.id],
+      agentIds: [agent.id],
+      lastMessageAt: new Date().toISOString(),
+    };
+    upsertChannel(channel);
+    const intro: Message = {
+      id: `local:agent-intro-${Date.now()}`,
+      source: 'system',
+      channelId: channel.id,
+      author: { id: agent.id, name: agent.name, kind: 'agent' },
+      createdAt: new Date().toISOString(),
+      blocks: [
+        {
+          type: 'markdown',
+          content: `Hi — I'm **${agent.name}**. ${agent.persona} Ask me anything or hand me a task.`,
+        },
+      ],
+      rawText: `Hi — I'm ${agent.name}. ${agent.persona}`,
+    };
+    dispatch({ kind: 'message.created', message: intro });
+    setActiveChannel(channel.id);
+  }
 
   const starred = visibleChannels.filter((c) => c.starred);
   const rooms = visibleChannels.filter(
@@ -83,6 +129,19 @@ export function HomeView() {
           </div>
           <IconChevronDown className="h-3 w-3 text-zen-subtle flex-shrink-0" />
         </button>
+
+        <div className="px-3">
+          <button
+            onClick={() => setStartChatOpen(true)}
+            className="w-full h-8 flex items-center gap-2 px-2.5 rounded-md bg-zen-ink text-white text-[12px] font-medium hover:bg-zen-accent transition-colors shadow-zen-soft"
+          >
+            <IconPencil className="h-3 w-3" />
+            <span className="flex-1 text-left">Start a chat</span>
+            <kbd className="text-[9px] bg-white/15 rounded px-1 py-0.5 font-sans">
+              ⌘N
+            </kbd>
+          </button>
+        </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 pb-4">
           <Section
@@ -140,22 +199,31 @@ export function HomeView() {
             onAdd={() => setView('agents')}
           >
             <ul className="space-y-0.5">
-              {agents.map((agent) => (
-                <li key={agent.id}>
-                  <button
-                    onClick={() => setView('agents')}
-                    className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-[13px] text-zen-muted hover:bg-zen-surface/60 hover:text-zen-ink transition-colors"
-                  >
-                    <Avatar name={agent.name} kind="agent" size="sm" />
-                    <span className="truncate flex-1 text-left">
-                      {agent.name}
-                    </span>
-                    {agent.proactive?.enabled && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    )}
-                  </button>
-                </li>
-              ))}
+              {agents.map((agent) => {
+                const dmId = `dm:${agent.id}`;
+                const isActive = activeChannelId === dmId;
+                return (
+                  <li key={agent.id}>
+                    <button
+                      onClick={() => openAgentDM(agent)}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-2 py-1 rounded-md text-[13px] transition-colors',
+                        isActive
+                          ? 'bg-zen-ink text-white hover:bg-zen-ink'
+                          : 'text-zen-muted hover:bg-zen-surface/60 hover:text-zen-ink',
+                      )}
+                    >
+                      <Avatar name={agent.name} kind="agent" size="sm" />
+                      <span className="truncate flex-1 text-left">
+                        {agent.name}
+                      </span>
+                      {agent.proactive?.enabled && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
               <li>
                 <button
                   onClick={() => setView('agents')}

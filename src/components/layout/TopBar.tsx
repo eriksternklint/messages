@@ -1,15 +1,19 @@
 'use client';
 
-import { IconSearch, IconSparkle } from '@/components/icons';
+import { IconSearch, IconSparkle, IconUsers } from '@/components/icons';
+import { cn } from '@/lib/utils';
 import { useNodeStore } from '@/store';
 
 /**
  * Notion-ish top bar spanning the full width above the three columns.
- * Hosts the AI search trigger (Cmd+K opens the palette) and a discreet
- * AI status chip.
+ * Hosts the AI search trigger (Cmd+K), the Org Directory entry point,
+ * and the AI Agent toggle that opens the right-sidebar agent.
  */
 export function TopBar() {
   const setSearchOpen = useNodeStore((s) => s.setSearchOpen);
+  const setOrgDirectoryOpen = useNodeStore((s) => s.setOrgDirectoryOpen);
+  const toggleAIAgent = useNodeStore((s) => s.toggleAIAgent);
+  const aiAgentOpen = useNodeStore((s) => s.aiAgentOpen);
   const mode = useNodeStore((s) => s.mode);
 
   return (
@@ -31,9 +35,31 @@ export function TopBar() {
         </kbd>
       </button>
 
-      <div className="flex items-center gap-1.5 text-[11px] text-zen-muted">
-        <IconSparkle className="h-3 w-3" />
-        AI on
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setOrgDirectoryOpen(true)}
+          className="h-7 px-2 rounded-md flex items-center gap-1.5 text-[11px] text-zen-muted hover:text-zen-ink hover:bg-zen-surface transition-colors"
+          title="Open the org directory"
+        >
+          <IconUsers className="h-3.5 w-3.5" />
+          People
+        </button>
+        <button
+          onClick={() => toggleAIAgent()}
+          className={cn(
+            'h-7 px-2.5 rounded-md flex items-center gap-1.5 text-[11px] font-medium border transition-colors',
+            aiAgentOpen
+              ? 'bg-zen-ink text-white border-zen-ink shadow-zen-soft'
+              : 'bg-zen-accentSoft text-zen-ink border-zen-accent/30 hover:border-zen-accent',
+          )}
+          title="Open the AI Agent panel"
+        >
+          <IconSparkle className="h-3 w-3" />
+          AI Agent
+          {!aiAgentOpen && (
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          )}
+        </button>
       </div>
     </header>
   );
