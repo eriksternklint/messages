@@ -7,6 +7,15 @@ export interface PinnedLink {
   kind: 'notion' | 'drive' | 'web' | 'figma';
 }
 
+/** A Notion database linked into a channel — shown in chat settings. */
+export interface LinkedNotionTable {
+  id: string;
+  title: string;
+  url: string;
+  /** Human-readable purpose — "Roadmap", "Tasks", "CRM" — rendered as a badge. */
+  role?: string;
+}
+
 /**
  * A conversational surface. Channels are not "just chat rooms" —
  * a `notion-mirror` channel is backed by a live Notion page, and a
@@ -32,4 +41,10 @@ export interface Channel {
   unreadCount?: number;
   /** Pinned resource bar at the top of the channel (Notion docs, etc). */
   pinnedLinks?: PinnedLink[];
+  /** Marked as a favourite — surfaces in the Home view "Starred" section. */
+  starred?: boolean;
+  /** Private channels only show for explicit members. */
+  isPrivate?: boolean;
+  /** Notion databases linked to this channel — shown in chat settings. */
+  linkedNotionTables?: LinkedNotionTable[];
 }

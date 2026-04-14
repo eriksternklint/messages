@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { Avatar } from '@/components/chat/Avatar';
 import { BlockRenderer } from '@/components/chat/BlockRenderer';
 import { QuotedMessage } from '@/components/chat/QuotedMessage';
 import {
@@ -15,7 +16,7 @@ import {
   IconTrash,
 } from '@/components/icons';
 import { dispatch } from '@/lib/events';
-import { cn, formatRelative, initials } from '@/lib/utils';
+import { cn, formatRelative } from '@/lib/utils';
 import { useNodeStore } from '@/store';
 import type { Message } from '@/types';
 
@@ -107,9 +108,12 @@ export function MessageRow({
         message.unread ? 'bg-zen-accentSoft/40' : 'hover:bg-zen-canvas/70',
       )}
     >
-      <div className="h-8 w-8 rounded-full bg-zen-surface border border-zen-border flex items-center justify-center text-[11px] font-medium text-zen-muted flex-shrink-0">
-        {initials(message.author.name)}
-      </div>
+      <Avatar
+        name={message.author.name}
+        avatarUrl={message.author.avatarUrl}
+        kind={message.author.kind}
+        size="md"
+      />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-[13px] font-medium text-zen-ink">

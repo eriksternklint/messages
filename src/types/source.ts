@@ -27,14 +27,17 @@ export type PriorityBucket = 'action' | 'fyi' | 'noise' | 'waiting';
 
 /**
  * The primary navigation views in the left rail. Each view swaps the
- * main column layout — "inbox" is the default Priority Feed + channel
- * timeline, "threads" is a flat feed of thread replies, "tasks" pivots
- * the tasks sidebar into the main column, etc. Similar to the
- * Slack-style view switcher.
+ * main column layout — "home" is the default channel timeline backed by
+ * a Slack-style home sidebar (starred, channels, DMs, agents,
+ * integrations), "threads" is a flat feed of thread replies, "tasks"
+ * pivots the tasks database into the main column, "agents" pivots to
+ * the agent marketplace.
  */
 export type ViewMode =
+  | 'home'
   | 'inbox'
   | 'threads'
   | 'tasks'
   | 'mentions'
-  | 'drafts';
+  | 'drafts'
+  | 'agents';

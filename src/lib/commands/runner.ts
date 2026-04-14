@@ -30,7 +30,8 @@ export async function runSlashCommand(
   switch (head) {
     case '/notion-page': {
       if (!args) {
-        body = 'Usage: `/notion-page [title]` — creates a new Notion page.';
+        body =
+          'Usage: `/notion-page [title]` — creates a new Notion page with sections, checklist and a tracker table.';
         blocks = [{ type: 'markdown', content: body }];
         break;
       }
@@ -38,9 +39,32 @@ export async function runSlashCommand(
       ({ body, blocks } = formatNotionResult(result, args));
       break;
     }
+    case '/notion-table': {
+      if (!args) {
+        body =
+          'Usage: `/notion-table [title]` — drops a 4×3 starter tracker table into the pinned Notion page.';
+        blocks = [{ type: 'markdown', content: body }];
+        break;
+      }
+      const result = await runNotionAction({ kind: 'append-table', title: args });
+      ({ body, blocks } = formatNotionResult(result, args));
+      break;
+    }
+    case '/notion-todo': {
+      if (!args) {
+        body =
+          'Usage: `/notion-todo [text]` — appends a checkbox to-do on the pinned Notion page.';
+        blocks = [{ type: 'markdown', content: body }];
+        break;
+      }
+      const result = await runNotionAction({ kind: 'append-todo', text: args });
+      ({ body, blocks } = formatNotionResult(result, args));
+      break;
+    }
     case '/update-block': {
       if (!args) {
-        body = 'Usage: `/update-block [text]` — appends a paragraph to the channel\'s pinned Notion page.';
+        body =
+          "Usage: `/update-block [text]` — appends a paragraph to the channel's pinned Notion page.";
         blocks = [{ type: 'markdown', content: body }];
         break;
       }
@@ -62,7 +86,7 @@ export async function runSlashCommand(
       break;
     }
     default: {
-      body = `Unknown command \`${head}\`. Try /notion-page, /update-block, or /notion-search.`;
+      body = `Unknown command \`${head}\`. Try /notion-page, /notion-table, /notion-todo, /update-block, or /notion-search.`;
       blocks = [{ type: 'markdown', content: body }];
     }
   }
@@ -89,7 +113,7 @@ function formatNotionResult(
     return { body, blocks: [{ type: 'markdown', content: `⚠ ${body}` }] };
   }
   if (result.kind === 'page') {
-    const body = `Created Notion page “${result.title}”.`;
+    const body = `Created Notion page “${result.title}” with a full template.`;
     return {
       body,
       blocks: [
@@ -104,7 +128,7 @@ function formatNotionResult(
     };
   }
   if (result.kind === 'block') {
-    const body = `Appended to Notion page “${result.pageTitle}”.`;
+    const body = `${result.summary} on “${result.pageTitle}”.`;
     return {
       body,
       blocks: [

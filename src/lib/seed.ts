@@ -22,6 +22,9 @@ export function seedDevData(): void {
       email: 'alex@company.com',
       username: 'alex',
       online: true,
+      color: 'emerald',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=128&h=128&fit=crop&crop=faces&auto=format&q=80',
       addedAt: new Date(now - 30 * 86_400_000).toISOString(),
     },
     {
@@ -31,6 +34,9 @@ export function seedDevData(): void {
       email: 'sam@company.com',
       username: 'sam',
       online: true,
+      color: 'amber',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=128&h=128&fit=crop&crop=faces&auto=format&q=80',
       addedAt: new Date(now - 60 * 86_400_000).toISOString(),
     },
     {
@@ -40,6 +46,9 @@ export function seedDevData(): void {
       email: 'mia@company.com',
       username: 'mia',
       online: false,
+      color: 'rose',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=128&h=128&fit=crop&crop=faces&auto=format&q=80',
       addedAt: new Date(now - 14 * 86_400_000).toISOString(),
     },
     {
@@ -88,6 +97,15 @@ export function seedDevData(): void {
       memberIds: ['u:you', 'u:alex', 'u:sam'],
       agentIds: ['agent:pm'],
       lastMessageAt: mins(12),
+      starred: true,
+      linkedNotionTables: [
+        {
+          id: 'lnt:q2-deliverables',
+          title: 'Q2 Deliverables',
+          url: 'https://www.notion.so/q2-deliverables',
+          role: 'Source of truth',
+        },
+      ],
       pinnedLinks: [
         {
           id: 'pin:q2-doc',
@@ -111,6 +129,7 @@ export function seedDevData(): void {
       description: 'Platform and infra.',
       memberIds: ['u:you', 'u:alex', 'u:sam', 'u:mia'],
       lastMessageAt: mins(41),
+      isPrivate: true,
       pinnedLinks: [
         {
           id: 'pin:eng-runbook',

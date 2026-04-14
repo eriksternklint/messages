@@ -16,21 +16,39 @@ interface SlashCommand {
 }
 
 /**
- * The universal Slash Command palette. Step 3 will wire these to real
- * side-effects (Notion / HubSpot / reminders); for now the input
- * dispatches the user message and synthesizes a system acknowledgement
- * so the feedback loop is visible.
+ * The universal Slash Command palette. The composer has three modes:
+ *
+ *  1. Idle — empty state, caret visible, placeholder shown.
+ *  2. Draft-pending — AI has pre-filled a response. Rendered italic in
+ *     zen-subtle gray so the user can tell at a glance it was drafted.
+ *     Enter sends as-is. Right-click promotes the draft into edit mode
+ *     (the user can rewrite it). Any click on the textarea clears the
+ *     draft and gives the user a blank canvas.
+ *  3. Composing — normal text entry, ink coloured, no italic.
+ *
+ * Slash commands dispatch against `/api/commands/run` which actually
+ * executes the Notion side-effect and returns an ack message.
  */
 const COMMANDS: SlashCommand[] = [
   {
     command: '/notion-page',
     args: '[title]',
-    description: 'Create a new Notion page and drop the link',
+    description: 'Create a Notion page with sections, todos and a checklist',
+  },
+  {
+    command: '/notion-table',
+    args: '[title]',
+    description: 'Drop a 4×3 starter table into the pinned Notion page',
+  },
+  {
+    command: '/notion-todo',
+    args: '[text]',
+    description: 'Append a to-do block to the pinned Notion page',
   },
   {
     command: '/update-block',
     args: '[text]',
-    description: 'Append a paragraph to the default Notion page',
+    description: 'Append a paragraph to the pinned Notion page',
   },
   {
     command: '/notion-search',
@@ -53,6 +71,9 @@ export function CommandInput({
   initialValue?: string;
 }) {
   const [text, setText] = useState(initialValue ?? '');
+  // When true, the current `text` IS the AI draft (untouched). Render
+  // as italic gray and treat clicks as "accept or discard" gestures.
+  const [draftMode, setDraftMode] = useState(Boolean(initialValue));
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const quoteMessageId = useNodeStore((s) => s.quoteMessageId);
@@ -60,9 +81,11 @@ export function CommandInput({
   const quotePreview = useQuotePreview(quoteMessageId);
 
   // When the active channel or the AI-drafted response changes, reset
-  // the input so the user always sees the current pre-fill.
+  // the input so the user always sees the current pre-fill and reset
+  // draft-mode. The user can still edit or discard.
   useEffect(() => {
     setText(initialValue ?? '');
+    setDraftMode(Boolean(initialValue));
   }, [channelId, initialValue]);
 
   // Autosize — grow with content, cap at 200px.
@@ -73,16 +96,12 @@ export function CommandInput({
     ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
   }, [text]);
 
-  const showSlashMenu = text.startsWith('/');
+  const showSlashMenu = !draftMode && text.startsWith('/');
   const matching = useMemo(() => {
     if (!showSlashMenu) return [];
     const first = text.split(/\s+/)[0];
     return COMMANDS.filter((c) => c.command.startsWith(first));
   }, [showSlashMenu, text]);
-
-  const hasDraft = Boolean(
-    initialValue && text === initialValue && text.length > 0,
-  );
 
   function send() {
     const trimmed = text.trim();
@@ -116,19 +135,52 @@ export function CommandInput({
     }
 
     setText('');
+    setDraftMode(false);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Enter with an un-edited AI draft sends it as-is. Same key-combo
+    // works in compose mode.
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       send();
+      return;
+    }
+    // Any non-navigation keystroke on a draft promotes it to edit mode
+    // so the user can freely rewrite without the italic styling.
+    if (draftMode && e.key.length === 1) {
+      setDraftMode(false);
+    }
+    if (draftMode && e.key === 'Backspace') {
+      // Backspace on a draft clears the whole thing — matches Gmail.
+      e.preventDefault();
+      setText('');
+      setDraftMode(false);
+    }
+  }
+
+  // Single click on the textarea wipes the draft — the user wanted a
+  // blank canvas. Right-click takes the edit path instead.
+  function onClick() {
+    if (draftMode) {
+      setText('');
+      setDraftMode(false);
+    }
+  }
+
+  // Right-click promotes the draft into edit mode without wiping it.
+  function onContextMenu(e: React.MouseEvent<HTMLTextAreaElement>) {
+    if (draftMode) {
+      e.preventDefault();
+      setDraftMode(false);
+      textareaRef.current?.focus();
     }
   }
 
   return (
     <div className="relative">
       {showSlashMenu && matching.length > 0 && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-zen-border rounded-lg shadow-sm overflow-hidden">
+        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-zen-border rounded-lg shadow-zen-pop overflow-hidden">
           <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-zen-subtle border-b border-zen-border">
             Commands
           </div>
@@ -164,10 +216,13 @@ export function CommandInput({
         </div>
       )}
 
-      {hasDraft && (
-        <div className="mb-2 flex items-center gap-1.5 text-[11px] text-zen-muted">
-          <IconSparkle className="h-3 w-3" />
-          AI drafted this response — edit or send as is
+      {draftMode && (
+        <div className="mb-2 flex items-center gap-1.5 text-[11px]">
+          <IconSparkle className="h-3 w-3 text-zen-accent" />
+          <span className="text-zen-muted">AI drafted this reply.</span>
+          <span className="ml-auto text-zen-subtle">
+            Enter to send · click to clear · right-click to edit
+          </span>
         </div>
       )}
 
@@ -182,7 +237,8 @@ export function CommandInput({
       <div
         className={cn(
           'flex items-end gap-2 border rounded-lg px-3 py-2 transition-colors bg-white',
-          focused ? 'border-zen-ink/40' : 'border-zen-border',
+          focused ? 'border-zen-ink/60 shadow-zen-soft' : 'border-zen-border',
+          draftMode && 'bg-zen-accentSoft/40 border-zen-accent/40',
         )}
       >
         <textarea
@@ -190,19 +246,26 @@ export function CommandInput({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
+          onClick={onClick}
+          onContextMenu={onContextMenu}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder="Message, or type / for commands"
           rows={1}
-          className="flex-1 resize-none bg-transparent outline-none text-[13px] text-zen-ink placeholder:text-zen-subtle leading-relaxed py-1"
+          className={cn(
+            'flex-1 resize-none bg-transparent outline-none leading-relaxed py-1 placeholder:text-zen-subtle',
+            draftMode
+              ? 'italic text-[15px] text-zen-subtle'
+              : 'text-[13px] text-zen-ink',
+          )}
         />
         <button
           onClick={send}
           disabled={!text.trim()}
           className={cn(
-            'flex-shrink-0 h-7 w-7 rounded-md flex items-center justify-center transition-colors',
+            'flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center transition-colors shadow-zen-soft',
             text.trim()
-              ? 'bg-zen-ink text-white hover:bg-zen-accent'
+              ? 'bg-zen-accent text-white hover:bg-[#1a6fc5]'
               : 'bg-zen-surface text-zen-subtle cursor-not-allowed',
           )}
           aria-label="Send"

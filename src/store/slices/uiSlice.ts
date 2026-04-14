@@ -48,7 +48,7 @@ export interface UISlice {
 }
 
 export const uiSlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
-  view: 'inbox',
+  view: 'home',
   workspacePanelOpen: false,
   aiPanelOpen: false,
   searchOpen: false,

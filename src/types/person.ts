@@ -11,6 +11,8 @@ export interface Person {
   username?: string;
   title?: string;
   avatarUrl?: string;
+  /** Tailwind color token used by the Avatar component fallback. */
+  color?: 'rose' | 'amber' | 'emerald' | 'sky' | 'violet' | 'indigo' | 'teal' | 'fuchsia';
   online?: boolean;
   addedAt: string;
 }

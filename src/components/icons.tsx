@@ -241,3 +241,22 @@ export const IconMenu = (p: IconProps) => (
     <path d="M3 12h18M3 6h18M3 18h18" />
   </Svg>
 );
+
+export const IconHome = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 12l9-9 9 9v9a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2z" />
+  </Svg>
+);
+
+export const IconLock = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 118 0v4" />
+  </Svg>
+);
+
+export const IconStar = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3l2.9 5.87L21 9.75l-4.5 4.38L17.62 21 12 18l-5.62 3 1.12-6.87L3 9.75l6.1-.88z" />
+  </Svg>
+);

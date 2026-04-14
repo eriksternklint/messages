@@ -4,63 +4,74 @@ import { useEffect } from 'react';
 
 import { AIChatPanel } from '@/components/ai/AIChatPanel';
 import { AISearchBar } from '@/components/ai/AISearchBar';
-import { ThreadPanel } from '@/components/chat/ThreadPanel';
 import { CreateModal } from '@/components/modals/CreateModal';
 import { installAutoDemo } from '@/lib/agents/auto-demo';
 import { installOrchestrator } from '@/lib/ai';
 import { seedDevData } from '@/lib/seed';
 import { useNodeStore } from '@/store';
 
-import { LeftSidebar } from './LeftSidebar';
-import { MainColumn } from './MainColumn';
-import { RightSidebar } from './RightSidebar';
+import { ContextSidebar } from './ContextSidebar';
 import { TopBar } from './TopBar';
 import { ViewRail } from './ViewRail';
 import { WorkspacePanel } from './WorkspacePanel';
+import { AgentsView } from './views/AgentsView';
+import { DraftsView } from './views/DraftsView';
+import { HomeView } from './views/HomeView';
+import { MentionsView } from './views/MentionsView';
+import { TasksView } from './views/TasksView';
+import { ThreadsView } from './views/ThreadsView';
 
 /**
- * Top-level app shell. Layout: a thin view rail on the far left, a
- * channel sidebar, the main conversation column, and the task
- * sidebar on the right. A topbar sits above all three columns.
- * Floating overlays (workspace drawer, thread panel, AI chat, search
- * palette, create modal) render in their own portals over the grid.
+ * Top-level app shell. The outer grid is a thin view rail on the far
+ * left; to its right the CurrentView renders its own sidebar + main
+ * column pair (Home, Tasks, Threads, Mentions, Drafts, Agents). The
+ * ContextSidebar on the far right is conditional on there being
+ * something context-worthy to show (a thread, an AI draft, agent state).
  */
 export function AppShell() {
-  useEffect(() => {
-    // Install the AI Orchestration Layer listener first so any events
-    // produced by the dev seed (if we later choose to dispatch them)
-    // or by the user's demo actions flow through it.
-    installOrchestrator();
+  const view = useNodeStore((s) => s.view);
 
-    // Seed dev data once, iff the store is empty. Uses getState() so
-    // this effect does not resubscribe when state changes. Seed calls
-    // store mutators directly (not dispatch), so the orchestrator
-    // listener does not fire on seed data.
+  useEffect(() => {
+    installOrchestrator();
     if (Object.keys(useNodeStore.getState().messagesById).length === 0) {
       seedDevData();
     }
-
-    // Start the auto-demo loop — periodic inbound messages, replies,
-    // new channel creation — so the app feels alive.
     installAutoDemo();
   }, []);
 
   return (
     <div className="h-screen flex flex-col bg-zen-bg text-zen-ink overflow-hidden">
       <TopBar />
-      <div className="flex-1 grid grid-cols-[56px_260px_minmax(0,1fr)_320px] min-h-0">
+      <div className="flex-1 flex min-h-0">
         <ViewRail />
-        <LeftSidebar />
-        <MainColumn />
-        <RightSidebar />
+        <CurrentView view={view} />
+        <ContextSidebar />
       </div>
 
       {/* Floating overlays */}
       <WorkspacePanel />
-      <ThreadPanel />
       <CreateModal />
       <AISearchBar />
       <AIChatPanel />
     </div>
   );
+}
+
+function CurrentView({ view }: { view: string }) {
+  switch (view) {
+    case 'tasks':
+      return <TasksView />;
+    case 'threads':
+      return <ThreadsView />;
+    case 'mentions':
+      return <MentionsView />;
+    case 'drafts':
+      return <DraftsView />;
+    case 'agents':
+      return <AgentsView />;
+    case 'home':
+    case 'inbox':
+    default:
+      return <HomeView />;
+  }
 }
