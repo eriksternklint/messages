@@ -53,6 +53,7 @@ export function WorkspacePanel() {
   const mode = useNodeStore((s) => s.mode);
   const setMode = useNodeStore((s) => s.setMode);
   const openCreateModal = useNodeStore((s) => s.openCreateModal);
+  const setInviteModalOpen = useNodeStore((s) => s.setInviteModalOpen);
 
   // Dismiss on escape for feel.
   useEffect(() => {
@@ -154,6 +155,14 @@ export function WorkspacePanel() {
               Icon={IconUsers}
               onClick={() => {
                 openCreateModal('new-chat');
+                setOpen(false);
+              }}
+            />
+            <CreateButton
+              label="Invite teammates"
+              Icon={IconUsers}
+              onClick={() => {
+                setInviteModalOpen(true);
                 setOpen(false);
               }}
             />

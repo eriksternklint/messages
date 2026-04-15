@@ -4,10 +4,12 @@ import { useEffect } from 'react';
 
 import { AISearchBar } from '@/components/ai/AISearchBar';
 import { CreateModal } from '@/components/modals/CreateModal';
+import { InviteModal } from '@/components/modals/InviteModal';
 import { StartChatModal } from '@/components/modals/StartChatModal';
 import { installAutoDemo } from '@/lib/agents/auto-demo';
 import { installPeopleChatter } from '@/lib/agents/people-chatter';
 import { installOrchestrator } from '@/lib/ai';
+import { consumeJoinedParam } from '@/lib/invites/join-handler';
 import { seedDevData } from '@/lib/seed';
 import { useNodeStore } from '@/store';
 
@@ -40,6 +42,9 @@ export function AppShell() {
     }
     installAutoDemo();
     installPeopleChatter();
+    // If the user just completed onboarding from an invite link, pick
+    // that up and add them to the directory before any UI paints.
+    consumeJoinedParam();
   }, []);
 
   return (
@@ -54,6 +59,7 @@ export function AppShell() {
       {/* Floating overlays */}
       <WorkspacePanel />
       <CreateModal />
+      <InviteModal />
       <StartChatModal />
       <OrgDirectory />
       <AISearchBar />

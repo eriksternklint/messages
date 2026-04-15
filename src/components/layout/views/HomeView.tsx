@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
@@ -17,6 +17,7 @@ import {
   IconPlus,
   IconRobot,
   IconUser,
+  IconUsers,
   IconWhatsApp,
 } from '@/components/icons';
 import { dispatch } from '@/lib/events';
@@ -48,17 +49,35 @@ export function HomeView() {
   const agents = useNodeStore(
     useShallow((s) => Object.values(s.agentsById)),
   );
+  const messagesById = useNodeStore((s) => s.messagesById);
+  const messageIdsByChannel = useNodeStore((s) => s.messageIdsByChannel);
   const activeChannelId = useNodeStore((s) => s.activeChannelId);
   const setActiveChannel = useNodeStore((s) => s.setActiveChannel);
   const openCreateModal = useNodeStore((s) => s.openCreateModal);
   const setView = useNodeStore((s) => s.setView);
   const setStartChatOpen = useNodeStore((s) => s.setStartChatOpen);
+  const setInviteModalOpen = useNodeStore((s) => s.setInviteModalOpen);
   const upsertChannel = useNodeStore((s) => s.upsertChannel);
   const channelsById = useNodeStore((s) => s.channelsById);
 
   const visibleChannels = channels.filter(
     (c) => mode === 'combined' || c.workspace === mode,
   );
+
+  // Count unread messages per channel so the sidebar can show a Slack-y
+  // badge/bold-weight treatment on rows that need attention.
+  const unreadByChannel = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const cid of Object.keys(messageIdsByChannel)) {
+      let n = 0;
+      for (const id of messageIdsByChannel[cid] ?? []) {
+        const m = messagesById[id];
+        if (m?.unread) n++;
+      }
+      if (n > 0) out[cid] = n;
+    }
+    return out;
+  }, [messagesById, messageIdsByChannel]);
 
   function openAgentDM(agent: Agent) {
     // Find or create a DM channel with this agent.
@@ -119,18 +138,26 @@ export function HomeView() {
       <aside className="w-[260px] border-r border-zen-border flex flex-col bg-zen-canvas min-h-0 flex-shrink-0">
         <button
           onClick={toggleWorkspacePanel}
-          className="mx-3 mt-3 mb-2 flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-zen-surface transition-colors text-left"
+          className="mx-2 mt-2 mb-2 flex items-center justify-between gap-2 px-2 py-2 rounded-md hover:bg-zen-surface transition-colors text-left group"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <ModeIcon className="h-3.5 w-3.5 text-zen-ink flex-shrink-0" />
-            <div className="text-[14px] font-semibold text-zen-ink truncate">
-              {modeLabel}
+            <div className="h-6 w-6 rounded-md bg-zen-ink text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0">
+              N
+            </div>
+            <div className="flex flex-col min-w-0">
+              <div className="text-[14px] font-bold text-zen-ink truncate tracking-tight leading-none">
+                Node
+              </div>
+              <div className="text-[10px] text-zen-subtle truncate leading-tight flex items-center gap-1 mt-0.5">
+                <ModeIcon className="h-2.5 w-2.5" />
+                {modeLabel}
+              </div>
             </div>
           </div>
-          <IconChevronDown className="h-3 w-3 text-zen-subtle flex-shrink-0" />
+          <IconChevronDown className="h-3 w-3 text-zen-subtle flex-shrink-0 group-hover:text-zen-ink transition-colors" />
         </button>
 
-        <div className="px-3">
+        <div className="px-3 space-y-1.5">
           <button
             onClick={() => setStartChatOpen(true)}
             className="w-full h-8 flex items-center gap-2 px-2.5 rounded-md bg-zen-ink text-white text-[12px] font-medium hover:bg-zen-accent transition-colors shadow-zen-soft"
@@ -140,6 +167,13 @@ export function HomeView() {
             <kbd className="text-[9px] bg-white/15 rounded px-1 py-0.5 font-sans">
               ⌘N
             </kbd>
+          </button>
+          <button
+            onClick={() => setInviteModalOpen(true)}
+            className="w-full h-8 flex items-center gap-2 px-2.5 rounded-md border border-zen-border bg-white text-[12px] font-medium text-zen-ink hover:bg-zen-canvas hover:border-zen-ink/40 transition-colors"
+          >
+            <IconUsers className="h-3 w-3 text-zen-muted" />
+            <span className="flex-1 text-left">Invite teammates</span>
           </button>
         </div>
 
@@ -157,6 +191,7 @@ export function HomeView() {
                   active={activeChannelId === channel.id}
                   onClick={() => setActiveChannel(channel.id)}
                   starred
+                  unread={unreadByChannel[channel.id] ?? 0}
                 />
               ))}
             </ul>
@@ -173,6 +208,7 @@ export function HomeView() {
                   channel={channel}
                   active={activeChannelId === channel.id}
                   onClick={() => setActiveChannel(channel.id)}
+                  unread={unreadByChannel[channel.id] ?? 0}
                 />
               ))}
             </ul>
@@ -189,6 +225,7 @@ export function HomeView() {
                   channel={channel}
                   active={activeChannelId === channel.id}
                   onClick={() => setActiveChannel(channel.id)}
+                  unread={unreadByChannel[channel.id] ?? 0}
                 />
               ))}
             </ul>
@@ -312,11 +349,13 @@ function ChannelRow({
   active,
   onClick,
   starred,
+  unread,
 }: {
   channel: Channel;
   active: boolean;
   onClick: () => void;
   starred?: boolean;
+  unread?: number;
 }) {
   const Icon =
     channel.kind === 'notion-mirror'
@@ -324,16 +363,23 @@ function ChannelRow({
       : channel.kind === 'whatsapp-chat'
         ? IconWhatsApp
         : IconHash;
+  const hasUnread = !active && (unread ?? 0) > 0;
 
   return (
-    <li>
+    <li className="relative">
+      {/* Slack-y left indicator bar when active. */}
+      {active && (
+        <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-zen-accent" />
+      )}
       <button
         onClick={onClick}
         className={cn(
-          'w-full flex items-center gap-2 px-2 py-1 rounded-md text-[13px] transition-colors',
+          'w-full flex items-center gap-2 pl-2.5 pr-2 py-1 rounded-md text-[13px] transition-colors',
           active
-            ? 'bg-zen-ink text-white hover:bg-zen-ink'
-            : 'text-zen-muted hover:bg-zen-surface/60 hover:text-zen-ink',
+            ? 'bg-zen-ink text-white hover:bg-zen-ink font-semibold'
+            : hasUnread
+              ? 'text-zen-ink font-semibold hover:bg-zen-surface/60'
+              : 'text-zen-muted hover:bg-zen-surface/60 hover:text-zen-ink',
         )}
       >
         <Icon className="h-3.5 w-3.5 flex-shrink-0" />
@@ -342,6 +388,11 @@ function ChannelRow({
         {channel.isPrivate && (
           <span className="text-[9px] uppercase tracking-wider opacity-60">
             private
+          </span>
+        )}
+        {hasUnread && (
+          <span className="h-4 min-w-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-semibold flex items-center justify-center flex-shrink-0">
+            {unread! > 99 ? '99+' : unread}
           </span>
         )}
       </button>

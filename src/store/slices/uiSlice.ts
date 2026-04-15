@@ -32,6 +32,8 @@ export interface UISlice {
   startChatOpen: boolean;
   /** Org Directory floating panel — triggered from top-bar people button. */
   orgDirectoryOpen: boolean;
+  /** Invite teammates modal — triggered from sidebar or workspace panel. */
+  inviteModalOpen: boolean;
   /** Thread sidepanel — holds the parent message id. */
   openThreadId: string | null;
   /** Pending inline quote reply — holds the quoted message id. */
@@ -50,6 +52,7 @@ export interface UISlice {
   closeCreateModal: () => void;
   setStartChatOpen: (open: boolean) => void;
   setOrgDirectoryOpen: (open: boolean) => void;
+  setInviteModalOpen: (open: boolean) => void;
   openThread: (messageId: string) => void;
   closeThread: () => void;
   setQuote: (messageId: string | null) => void;
@@ -64,6 +67,7 @@ export const uiSlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   createModal: null,
   startChatOpen: false,
   orgDirectoryOpen: false,
+  inviteModalOpen: false,
   openThreadId: null,
   quoteMessageId: null,
   channelTab: null,
@@ -86,6 +90,7 @@ export const uiSlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   closeCreateModal: () => set({ createModal: null }),
   setStartChatOpen: (startChatOpen) => set({ startChatOpen }),
   setOrgDirectoryOpen: (orgDirectoryOpen) => set({ orgDirectoryOpen }),
+  setInviteModalOpen: (inviteModalOpen) => set({ inviteModalOpen }),
   openThread: (messageId) =>
     set({ openThreadId: messageId, aiAgentOpen: false }),
   closeThread: () => set({ openThreadId: null }),

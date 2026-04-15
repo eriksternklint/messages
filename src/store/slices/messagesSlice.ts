@@ -24,9 +24,26 @@ export const messagesSlice: StateCreator<MessagesSlice, [], [], MessagesSlice> =
     set((state) => {
       const existing = state.messagesById[message.id];
       const ids = state.messageIdsByChannel[message.channelId] ?? [];
+      // Auto-mark new incoming human/agent messages as unread so the
+      // sidebar badge logic has something to show, unless the user is
+      // already looking at that channel. Respects any unread flag the
+      // caller has explicitly set on the message.
+      const shouldAutoUnread =
+        !existing &&
+        message.unread === undefined &&
+        message.author.id !== 'u:you' &&
+        message.author.kind !== 'system' &&
+        // `activeChannelId` lives in the workspace slice on the same root
+        // store — at this point `state` is the combined state so it's
+        // readable here.
+        ((state as unknown) as { activeChannelId?: string }).activeChannelId !==
+          message.channelId;
+      const normalized = shouldAutoUnread
+        ? { ...message, unread: true }
+        : message;
       const nextMessagesById = {
         ...state.messagesById,
-        [message.id]: message,
+        [message.id]: normalized,
       };
 
       // If this is a thread reply, bump the parent's reply count so

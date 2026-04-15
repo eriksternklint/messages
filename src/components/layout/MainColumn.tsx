@@ -41,7 +41,7 @@ export function MainColumn() {
 
   if (!channel) {
     return (
-      <div className="flex items-center justify-center text-zen-subtle text-sm bg-zen-bg">
+      <div className="flex-1 min-w-0 min-h-0 flex items-center justify-center text-zen-subtle text-sm bg-zen-bg">
         Select a channel to get started.
       </div>
     );
@@ -59,7 +59,7 @@ export function MainColumn() {
     .find((m) => m.ai?.draftedResponse)?.ai?.draftedResponse;
 
   return (
-    <div className="flex flex-col min-w-0 min-h-0 bg-zen-bg relative">
+    <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-zen-bg relative">
       <ChannelHeader channel={channel} />
       <ChannelShortcuts channel={channel} />
       <div className="flex-1 overflow-y-auto px-8 py-6">
