@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lox Academy 🐟</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Georgia', serif;
+  background: linear-gradient(135deg, #FFF5EE 0%, #FFE8D8 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+.game-wrap {
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.screen { display: none; }
+.screen.active { display: block; animation: fadeUp 0.4s ease; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes swim {
+  0%, 100% { transform: translateX(-12px) rotate(-6deg); }
+  50%       { transform: translateX(12px)  rotate(6deg); }
+}
+
+@keyframes pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* ── Progress bar ── */
+.progress-bar {
+  background: #F0DDD0;
+  border-radius: 50px;
+  height: 8px;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+.progress-fill {
+  background: linear-gradient(90deg, #E8634A, #FA8072);
+  height: 100%;
+  border-radius: 50px;
+  transition: width 0.6s ease;
+}
+
+/* ── Cards ── */
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 36px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.09);
+  margin-bottom: 18px;
+}
+
+/* ── Title screen ── */
+.title-screen {
+  text-align: center;
+  padding: 50px 20px;
+}
+.hero-fish { font-size: 90px; display: block; animation: swim 3s ease-in-out infinite; margin-bottom: 16px; }
+.game-title { font-size: 3em; color: #E8634A; margin-bottom: 8px; letter-spacing: -1px; }
+.game-sub { font-size: 1.1em; color: #8B6914; margin-bottom: 36px; line-height: 1.5; }
+
+/* ── Info screens ── */
+.info-emoji { font-size: 64px; text-align: center; display: block; margin-bottom: 20px; }
+h2 { color: #E8634A; font-size: 1.75em; margin-bottom: 16px; text-align: center; }
+p  { line-height: 1.75; margin-bottom: 14px; font-size: 1.03em; color: #2C1810; }
+.callout {
+  background: #FFF0E8;
+  border-left: 4px solid #E8634A;
+  border-radius: 0 12px 12px 0;
+  padding: 14px 18px;
+  margin: 12px 0;
+  font-size: 0.97em;
+  line-height: 1.6;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-block;
+  padding: 13px 34px;
+  background: #E8634A;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Georgia', serif;
+}
+.btn:hover { background: #C94A30; transform: scale(1.04); box-shadow: 0 4px 16px rgba(232,99,74,0.35); }
+.btn-muted { background: #A08040; }
+.btn-muted:hover { background: #7A6030; }
+
+.nav { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+
+/* ── Quiz ── */
+.quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.q-num  { color: #8B6914; font-size: 0.9em; }
+.q-pts  { background: #FFF0E8; color: #E8634A; padding: 4px 14px; border-radius: 50px; font-size: 0.9em; font-weight: bold; }
+.q-text { font-size: 1.25em; font-weight: bold; text-align: center; margin-bottom: 26px; color: #2C1810; line-height: 1.4; }
+
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.ans-btn {
+  padding: 14px 12px;
+  border: 2px solid #F0DDD0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.93em;
+  font-family: 'Georgia', serif;
+  transition: all 0.2s;
+  text-align: left;
+  line-height: 1.4;
+  color: #2C1810;
+}
+.ans-btn:hover:not(:disabled) { border-color: #E8634A; background: #FFF5F2; }
+.ans-btn.correct { border-color: #43A047; background: #E8F5E9; color: #1B5E20; }
+.ans-btn.wrong   { border-color: #E53935; background: #FFEBEE; color: #B71C1C; }
+.ans-btn:disabled { cursor: default; }
+
+.feedback {
+  min-height: 28px;
+  text-align: center;
+  font-size: 0.97em;
+  line-height: 1.5;
+  padding: 0 10px;
+}
+.feedback.good { color: #2E7D32; }
+.feedback.bad  { color: #B71C1C; }
+
+/* ── Bagel builder ── */
+.builder { display: flex; gap: 22px; align-items: flex-start; }
+
+.shelf {
+  width: 185px;
+  flex-shrink: 0;
+}
+.shelf-label { font-size: 0.85em; color: #8B6914; font-weight: bold; margin-bottom: 10px; display: block; }
+.ing-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 7px;
+  padding: 9px 12px;
+  background: white;
+  border: 2px solid #F0DDD0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.88em;
+  font-family: 'Georgia', serif;
+  transition: all 0.18s;
+  color: #2C1810;
+}
+.ing-btn:hover:not(:disabled) { border-color: #E8634A; background: #FFF5F2; }
+.ing-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ing-btn.added { border-color: #43A047; background: #F1F8F1; }
+.reset-btn { border-color: #E8634A !important; color: #E8634A !important; background: #FFF5F2 !important; margin-top: 10px; }
+
+.plate {
+  flex: 1;
+  background: #FFFAF5;
+  border-radius: 18px;
+  border: 3px dashed #DDB890;
+  padding: 24px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+.plate-empty { color: #C0A880; font-size: 0.9em; margin-top: 80px; }
+.bagel-stack { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+.stack-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 1.05em; padding: 5px 14px;
+  background: white; border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  width: 100%; justify-content: center;
+  animation: pop 0.25s ease;
+}
+.plate-hint { margin-top: 14px; font-size: 0.88em; min-height: 22px; text-align: center; }
+.plate-hint.warn { color: #E67E22; }
+.plate-hint.good { color: #43A047; }
+
+/* ── Results ── */
+.results-card { text-align: center; }
+.result-hero { font-size: 88px; margin-bottom: 10px; }
+.final-pts { font-size: 3.2em; color: #E8634A; font-weight: bold; margin: 12px 0; }
+.grade-txt { font-size: 1.3em; color: #8B6914; margin-bottom: 22px; }
+.fast-facts {
+  background: #FFF8F0;
+  border-radius: 14px;
+  padding: 20px 24px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+.fast-facts strong { color: #E8634A; display: block; margin-bottom: 10px; }
+.fast-facts li { line-height: 2.1; font-size: 0.96em; }
+
+/* ── Responsive ── */
+@media (max-width: 500px) {
+  .card { padding: 24px 18px; }
+  .answers { grid-template-columns: 1fr; }
+  .builder { flex-direction: column; }
+  .shelf { width: 100%; }
+  .game-title { font-size: 2.2em; }
+}
+</style>
+</head>
+<body>
+<div class="game-wrap">
+
+  <!-- ── TITLE ── -->
+  <div id="s-title" class="screen active">
+    <div class="title-screen">
+      <span class="hero-fish">🐟</span>
+      <h1 class="game-title">Lox Academy</h1>
+      <p class="game-sub">The silky, salty, salmon-y deep dive<br>you didn't know you needed</p>
+      <button class="btn" onclick="show('s-what')">Start Learning 🎓</button>
+    </div>
+  </div>
+
+  <!-- ── WHAT IS LOX ── -->
+  <div id="s-what" class="screen">
+    <div class="progress-bar"><div class="progress-fill" style="width:14%"></div></div>
+    <div class="card">
+      <span class="info-emoji">🥯</span>
+      <h2>What Is Lox?</h2>
+      <p>Lox is <strong>salt-cured salmon</strong> — traditionally cut from the fatty belly — and it's one of the most beloved foods in Jewish deli culture. Think silky, paper-thin slices of deep pink salmon that practically melt on your tongue.</p>
+      <p>Despite what many menus and people imply, <em>traditional lox is not smoked</em>. It's packed in salt and cured over several days. The result is rich, intensely flavored, and genuinely salty — an acquired taste that people acquire immediately.</p>
+      <div class="callout">
+        🧠 <strong>The classic:</strong> A toasted bagel smeared with cream cheese, topped with lox, capers, red onion slices, and a tomato. New York's greatest contribution to brunch.
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn btn-muted" onclick="show('s-title')">← Back</button>
+      <button class="btn" onclick="show('s-history')">Next →</button>
+    </div>
+  </div>
+
+  <!-- ── HISTORY ── -->
+  <div id="s-history" class="screen">
+    <div class="progress-bar"><div class="progress-fill" style="width:28%"></div></div>
+    <div class="card">
+      <span class="info-emoji">📜</span>
+      <h2>Where Lox Came From</h2>
+      <p>The word <strong>"lox"</strong> is Yiddish — from <em>laks</em>, meaning salmon — which shares its Proto-Germanic root with modern German <em>Lachs</em> and Swedish <em>lax</em>. Salmon is salmon across the whole northern world.</p>
+      <p>The salt-curing technique comes from <strong>Scandinavia</strong>, where preserving fish without refrigeration was survival. Central and Eastern European Jewish communities adopted the tradition and brought it to America.</p>
+      <p>By the early 1900s, lox had become a staple in <strong>New York City's Jewish delis</strong>. It was initially considered a poor man's food — very salty, cheap, and filling. The cream cheese bagel pairing turned it into an icon.</p>
+      <div class="callout">
+        🌍 Fun fact: The appeal of salt-cured salmon is so universal that nearly every northern culture independently invented some version of it.
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn btn-muted" onclick="show('s-what')">← Back</button>
+      <button class="btn" onclick="show('s-types')">Next →</button>
+    </div>
+  </div>
+
+  <!-- ── TYPES ── -->
+  <div id="s-types" class="screen">
+    <div class="progress-bar"><div class="progress-fill" style="width:42%"></div></div>
+    <div class="card">
+      <span class="info-emoji">🐠</span>
+      <h2>Lox and Its Cousins</h2>
+      <p>Ordering salmon at a deli means navigating a confusing family of cured fish. Here's how to tell them apart:</p>
+      <div class="callout">
+        🐟 <strong>Traditional Lox</strong> — Salt-cured belly, never smoked. Very salty, silky texture. The purist's pick.
+      </div>
+      <div class="callout">
+        ✨ <strong>Nova Lox ("Nova")</strong> — Salt-cured, then cold-smoked. Milder, less salty, subtly smoky. Named after Nova Scotia. <em>This is what most delis actually serve when they say "lox."</em>
+      </div>
+      <div class="callout">
+        🌿 <strong>Gravlax</strong> — Scandinavia's answer. Cured with salt, sugar, and fresh dill. Fragrant, slightly sweet, often served with mustard-dill sauce.
+      </div>
+      <div class="callout">
+        🔥 <strong>Hot-Smoked Salmon</strong> — Fully cooked at higher temperatures. Flaky texture like cooked fish. Delicious, but not lox.
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn btn-muted" onclick="show('s-history')">← Back</button>
+      <button class="btn" onclick="startQuiz()">Quiz Time! 📝</button>
+    </div>
+  </div>
+
+  <!-- ── QUIZ ── -->
+  <div id="s-quiz" class="screen">
+    <div class="progress-bar"><div class="progress-fill" id="quiz-bar" style="width:50%"></div></div>
+    <div class="card">
+      <div class="quiz-meta">
+        <span class="q-num" id="q-num">Question 1 of 5</span>
+        <span class="q-pts">⭐ <span id="score-live">0</span> pts</span>
+      </div>
+      <div class="q-text" id="q-text"></div>
+      <div class="answers" id="ans-grid"></div>
+      <div class="feedback" id="q-feedback"></div>
+    </div>
+    <div class="nav">
+      <button class="btn" id="q-next-btn" style="display:none" onclick="nextQ()">Next →</button>
+    </div>
+  </div>
+
+  <!-- ── BAGEL BUILDER ── -->
+  <div id="s-bagel" class="screen">
+    <div class="progress-bar"><div class="progress-fill" style="width:82%"></div></div>
+    <div class="card">
+      <h2>🥯 Build the Perfect Lox Bagel</h2>
+      <p style="text-align:center;margin-bottom:20px;font-size:0.97em;">
+        Add ingredients to assemble the classic. You need at least the first three!
+      </p>
+      <div class="builder">
+        <div class="shelf">
+          <span class="shelf-label">Ingredients</span>
+          <button class="ing-btn" id="ib-bagel"  onclick="addIng('bagel')"> 🥯 Bagel</button>
+          <button class="ing-btn" id="ib-cream"  onclick="addIng('cream')"> 🧀 Cream Cheese</button>
+          <button class="ing-btn" id="ib-lox"    onclick="addIng('lox')">   🐟 Lox</button>
+          <button class="ing-btn" id="ib-capers" onclick="addIng('capers')">🟢 Capers</button>
+          <button class="ing-btn" id="ib-onion"  onclick="addIng('onion')"> 🧅 Red Onion</button>
+          <button class="ing-btn" id="ib-tomato" onclick="addIng('tomato')">🍅 Tomato</button>
+          <button class="ing-btn" id="ib-dill"   onclick="addIng('dill')">  🌿 Fresh Dill</button>
+          <button class="ing-btn reset-btn"       onclick="resetBagel()">   ↺ Start Over</button>
+        </div>
+        <div class="plate">
+          <div class="plate-empty" id="plate-empty">Your plate is empty…</div>
+          <div class="bagel-stack" id="bagel-stack"></div>
+          <div class="plate-hint" id="plate-hint"></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn" id="serve-btn" style="display:none" onclick="serveBagel()">Serve It Up! 🍽️</button>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div id="s-results" class="screen">
+    <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    <div class="card results-card">
+      <div class="result-hero" id="res-emoji">🏆</div>
+      <h2>Lox Academy Complete!</h2>
+      <div class="final-pts" id="res-score">0 / 100</div>
+      <div class="grade-txt" id="res-grade">Nice work!</div>
+      <div class="fast-facts">
+        <strong>🐟 Lox cheat sheet — impress everyone at brunch:</strong>
+        <ul style="padding-left:20px">
+          <li>Lox = salt-cured salmon belly, <em>not</em> smoked</li>
+          <li>The word is from Yiddish <em>laks</em>, cousin to Swedish <em>lax</em></li>
+          <li>Nova lox = salt-cured then cold-smoked (the deli standard)</li>
+          <li>Gravlax = cured with dill + sugar, served with mustard sauce</li>
+          <li>The classic: bagel → cream cheese → lox → capers + red onion</li>
+        </ul>
+      </div>
+      <button class="btn" onclick="restartGame()">Play Again 🔄</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let score = 0;
+let qIdx  = 0;
+let answered = false;
+let shuffledAnswers = [];
+let shuffledCorrect = 0;
+let bagel = [];
+
+// ── Questions (correct answer always index 0 before shuffle) ───────────────
+const QUESTIONS = [
+  {
+    q: "What exactly IS lox?",
+    opts: ["Salt-cured salmon", "Hot-smoked whitefish", "A type of cream cheese", "Pickled herring"],
+    ci: 0,
+    explain: "Lox is salmon cured in salt — no heat or smoke in the traditional version!"
+  },
+  {
+    q: "Where does the word 'lox' come from?",
+    opts: ["Yiddish 'laks' meaning salmon", "Norwegian for 'pink fish'", "The name of an early NYC deli", "Latin 'loxus' meaning slanted"],
+    ci: 0,
+    explain: "Yiddish laks → lox, sharing roots with German Lachs and Swedish lax."
+  },
+  {
+    q: "How is traditional lox different from smoked salmon?",
+    opts: ["Lox is salt-cured, never smoked", "Lox only uses Atlantic salmon", "Lox is sliced thinner", "They're exactly the same thing"],
+    ci: 0,
+    explain: "Classic lox is just salt — no smoke, no heat. The smoking is a separate process."
+  },
+  {
+    q: "What makes gravlax different from regular lox?",
+    opts: ["Cured with fresh dill, sugar & salt", "It's always hot-smoked", "It uses Arctic char, not salmon", "It's totally raw, no curing at all"],
+    ci: 0,
+    explain: "Gravlax is Scandinavia's version — cured with dill, sugar, and salt. Fragrant and slightly sweet!"
+  },
+  {
+    q: "What is 'Nova lox' (aka nova)?",
+    opts: ["Salt-cured then cold-smoked", "Extra-salty traditional lox", "Lox caught only near Nova Scotia", "A farmed, cheaper salmon variety"],
+    ci: 0,
+    explain: "Nova = cured first, then cold-smoked. It's milder than pure lox — and what most delis serve today."
+  }
+];
+
+// ── Ingredients ────────────────────────────────────────────────────────────
+const INGS = {
+  bagel:  { e: '🥯', label: 'Toasted Bagel',  req: true  },
+  cream:  { e: '🧀', label: 'Cream Cheese',    req: true  },
+  lox:    { e: '🐟', label: 'Silky Lox',       req: true  },
+  capers: { e: '🟢', label: 'Capers',           req: false },
+  onion:  { e: '🧅', label: 'Red Onion',        req: false },
+  tomato: { e: '🍅', label: 'Tomato',           req: false },
+  dill:   { e: '🌿', label: 'Fresh Dill',       req: false },
+};
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Quiz ───────────────────────────────────────────────────────────────────
+function startQuiz() {
+  score = 0;
+  qIdx  = 0;
+  show('s-quiz');
+  renderQuestion();
+}
+
+function shuffle(arr, correctIdx) {
+  const correct = arr[correctIdx];
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return { opts: shuffled, ci: shuffled.indexOf(correct) };
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[qIdx];
+  answered = false;
+
+  const { opts, ci } = shuffle(q.opts, q.ci);
+  shuffledAnswers = opts;
+  shuffledCorrect = ci;
+
+  document.getElementById('q-num').textContent      = `Question ${qIdx + 1} of ${QUESTIONS.length}`;
+  document.getElementById('score-live').textContent = score;
+  document.getElementById('q-text').textContent     = q.q;
+  document.getElementById('q-feedback').textContent = '';
+  document.getElementById('q-feedback').className   = 'feedback';
+  document.getElementById('q-next-btn').style.display = 'none';
+
+  const pct = 50 + (qIdx / QUESTIONS.length) * 30;
+  document.getElementById('quiz-bar').style.width = pct + '%';
+
+  const grid = document.getElementById('ans-grid');
+  grid.innerHTML = '';
+  opts.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className   = 'ans-btn';
+    b.textContent = opt;
+    b.onclick = () => checkAnswer(i);
+    grid.appendChild(b);
+  });
+}
+
+function checkAnswer(chosen) {
+  if (answered) return;
+  answered = true;
+
+  const q    = QUESTIONS[qIdx];
+  const btns = document.querySelectorAll('.ans-btn');
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === shuffledCorrect) b.classList.add('correct');
+    else if (i === chosen)     b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('q-feedback');
+  if (chosen === shuffledCorrect) {
+    score += 15;
+    document.getElementById('score-live').textContent = score;
+    fb.textContent  = '✅ Correct! ' + q.explain;
+    fb.className    = 'feedback good';
+  } else {
+    fb.textContent = '❌ Not quite. ' + q.explain;
+    fb.className   = 'feedback bad';
+  }
+
+  const nextBtn = document.getElementById('q-next-btn');
+  nextBtn.style.display = 'inline-block';
+  if (qIdx < QUESTIONS.length - 1) {
+    nextBtn.textContent = 'Next Question →';
+    nextBtn.onclick     = nextQ;
+  } else {
+    nextBtn.textContent = 'Build a Bagel! 🥯';
+    nextBtn.onclick     = () => { resetBagel(); show('s-bagel'); };
+  }
+}
+
+function nextQ() {
+  qIdx++;
+  renderQuestion();
+}
+
+// ── Bagel builder ──────────────────────────────────────────────────────────
+function resetBagel() {
+  bagel = [];
+  Object.keys(INGS).forEach(k => {
+    const b = document.getElementById('ib-' + k);
+    b.disabled = false;
+    b.classList.remove('added');
+  });
+  document.getElementById('bagel-stack').innerHTML = '';
+  document.getElementById('plate-hint').textContent = '';
+  document.getElementById('plate-hint').className = 'plate-hint';
+  document.getElementById('plate-empty').style.display = 'block';
+  document.getElementById('serve-btn').style.display = 'none';
+}
+
+function addIng(key) {
+  if (bagel.includes(key)) return;
+  bagel.push(key);
+
+  const btn = document.getElementById('ib-' + key);
+  btn.disabled = true;
+  btn.classList.add('added');
+
+  document.getElementById('plate-empty').style.display = 'none';
+
+  const item = document.createElement('div');
+  item.className = 'stack-item';
+  item.textContent = INGS[key].e + ' ' + INGS[key].label;
+  document.getElementById('bagel-stack').appendChild(item);
+
+  const hint = document.getElementById('plate-hint');
+  hint.className = 'plate-hint';
+
+  // Order advice
+  if (key === 'cream' && !bagel.includes('bagel')) {
+    hint.textContent = '⚠️ Usually bagel goes down first!';
+    hint.className = 'plate-hint warn';
+  } else if (key === 'lox' && !bagel.includes('cream')) {
+    hint.textContent = '⚠️ Cream cheese before the lox!';
+    hint.className = 'plate-hint warn';
+  } else {
+    hint.textContent = '';
+  }
+
+  const hasEssentials = bagel.includes('bagel') && bagel.includes('cream') && bagel.includes('lox');
+  if (hasEssentials) {
+    document.getElementById('serve-btn').style.display = 'inline-block';
+    if (!hint.textContent) {
+      hint.textContent = '✨ Looking good! Add more or serve it up!';
+      hint.className = 'plate-hint good';
+    }
+  }
+}
+
+function serveBagel() {
+  const hasEssentials = bagel.includes('bagel') && bagel.includes('cream') && bagel.includes('lox');
+  let bagelPts = 0;
+  if (hasEssentials) bagelPts += 10;
+
+  // Correct order bonus
+  const bi = bagel.indexOf('bagel'), ci = bagel.indexOf('cream'), li = bagel.indexOf('lox');
+  if (bi < ci && ci < li) bagelPts += 8;
+
+  // Bonus toppings
+  const extras = ['capers', 'onion', 'tomato', 'dill'].filter(k => bagel.includes(k));
+  if (extras.length > 0) bagelPts += Math.min(extras.length * 3, 7);
+
+  score += bagelPts;
+  showResults();
+}
+
+// ── Results ────────────────────────────────────────────────────────────────
+function showResults() {
+  show('s-results');
+  // Max theoretical: 5×15 quiz + 10 essentials + 8 order + 7 extras = 100
+  const capped = Math.min(score, 100);
+  document.getElementById('res-score').textContent = capped + ' / 100';
+
+  let emoji, grade;
+  if      (capped >= 90) { emoji = '🐟✨'; grade = 'Certified Lox Expert!'; }
+  else if (capped >= 70) { emoji = '🥯';   grade = 'Lox Connoisseur!'; }
+  else if (capped >= 50) { emoji = '🌟';   grade = 'Lox Apprentice — almost there!'; }
+  else                   { emoji = '📚';   grade = 'Beginner Bagel Builder — re-read the lessons!'; }
+
+  document.getElementById('res-emoji').textContent = emoji;
+  document.getElementById('res-grade').textContent = grade;
+}
+
+function restartGame() {
+  score = 0; qIdx = 0;
+  show('s-title');
+}
+</script>
+</body>
+</html>
